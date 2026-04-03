@@ -372,4 +372,34 @@ export const CHANNEL_MAP = {
   getAutomationLastExecuted: invoke(RPC_CHANNELS.automations.GET_LAST_EXECUTED),
   replayAutomation: invoke(RPC_CHANNELS.automations.REPLAY),
   onAutomationsChanged: listener(RPC_CHANNELS.automations.CHANGED),
+
+  // Inbox
+  getInboxMessages: invoke(RPC_CHANNELS.inbox.GET_MESSAGES),
+  getInboxMessage: invoke(RPC_CHANNELS.inbox.GET_MESSAGE),
+  getInboxThread: invoke(RPC_CHANNELS.inbox.GET_THREAD),
+  markInboxRead: invoke(RPC_CHANNELS.inbox.MARK_READ),
+  syncInbox: invoke(RPC_CHANNELS.inbox.SYNC),
+  getInboxSyncStatus: invoke(RPC_CHANNELS.inbox.GET_SYNC_STATUS),
+  getInboxConfig: invoke(RPC_CHANNELS.inbox.GET_CONFIG),
+  updateInboxConfig: invoke(RPC_CHANNELS.inbox.UPDATE_CONFIG),
+  onInboxChanged: listener(RPC_CHANNELS.inbox.CHANGED),
+
+  // Inbox Tasks
+  getInboxTasks: invoke(RPC_CHANNELS.inboxTasks.GET_ALL),
+  getInboxTask: invoke(RPC_CHANNELS.inboxTasks.GET),
+  createInboxTask: invoke(RPC_CHANNELS.inboxTasks.CREATE),
+  updateInboxTask: invoke(RPC_CHANNELS.inboxTasks.UPDATE),
+  deleteInboxTask: invoke(RPC_CHANNELS.inboxTasks.DELETE),
+  startInboxTaskSession: invoke(RPC_CHANNELS.inboxTasks.START_SESSION),
+  onInboxTasksChanged: listener(RPC_CHANNELS.inboxTasks.CHANGED),
+
+  // Calendar
+  getCalendarEvents: invoke(RPC_CHANNELS.calendar.GET_EVENTS),
+  getCalendarEvent: invoke(RPC_CHANNELS.calendar.GET_EVENT),
+  createCalendarEvent: invoke(RPC_CHANNELS.calendar.CREATE_EVENT),
+  updateCalendarEvent: invoke(RPC_CHANNELS.calendar.UPDATE_EVENT),
+  deleteCalendarEvent: invoke(RPC_CHANNELS.calendar.DELETE_EVENT),
+  syncCalendar: invoke(RPC_CHANNELS.calendar.SYNC),
+  getCalendarSyncStatus: invoke(RPC_CHANNELS.calendar.GET_SYNC_STATUS),
+  onCalendarChanged: listener(RPC_CHANNELS.calendar.CHANGED),
 } satisfies ChannelMap

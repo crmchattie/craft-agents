@@ -66,4 +66,9 @@ export interface BroadcastEventMap {
   [RPC_CHANNELS.menu.KEYBOARD_SHORTCUTS]: []
   [RPC_CHANNELS.menu.TOGGLE_FOCUS_MODE]: []
   [RPC_CHANNELS.menu.TOGGLE_SIDEBAR]: []
+
+  // Inbox, Tasks & Calendar broadcasts
+  [RPC_CHANNELS.inbox.CHANGED]: [workspaceId: string]
+  [RPC_CHANNELS.inboxTasks.CHANGED]: [workspaceId: string]
+  [RPC_CHANNELS.calendar.CHANGED]: [workspaceId: string]
 }

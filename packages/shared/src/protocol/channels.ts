@@ -360,6 +360,36 @@ export const RPC_CHANNELS = {
     REPLAY: 'automations:replay',
     CHANGED: 'automations:changed',
   },
+  inbox: {
+    GET_MESSAGES: 'inbox:getMessages',
+    GET_MESSAGE: 'inbox:getMessage',
+    GET_THREAD: 'inbox:getThread',
+    MARK_READ: 'inbox:markRead',
+    SYNC: 'inbox:sync',
+    GET_SYNC_STATUS: 'inbox:getSyncStatus',
+    GET_CONFIG: 'inbox:getConfig',
+    UPDATE_CONFIG: 'inbox:updateConfig',
+    CHANGED: 'inbox:changed',
+  },
+  inboxTasks: {
+    GET_ALL: 'inboxTasks:getAll',
+    GET: 'inboxTasks:get',
+    CREATE: 'inboxTasks:create',
+    UPDATE: 'inboxTasks:update',
+    DELETE: 'inboxTasks:delete',
+    START_SESSION: 'inboxTasks:startSession',
+    CHANGED: 'inboxTasks:changed',
+  },
+  calendar: {
+    GET_EVENTS: 'calendar:getEvents',
+    GET_EVENT: 'calendar:getEvent',
+    CREATE_EVENT: 'calendar:createEvent',
+    UPDATE_EVENT: 'calendar:updateEvent',
+    DELETE_EVENT: 'calendar:deleteEvent',
+    SYNC: 'calendar:sync',
+    GET_SYNC_STATUS: 'calendar:getSyncStatus',
+    CHANGED: 'calendar:changed',
+  },
 } as const
 
 // IPC_CHANNELS compat alias removed — all consumers now use RPC_CHANNELS

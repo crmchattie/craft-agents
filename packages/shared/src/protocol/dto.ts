@@ -245,6 +245,8 @@ export type SessionCommand =
 export interface NewChatActionParams {
   input?: string
   name?: string
+  sessionOptions?: Partial<CreateSessionOptions>
+  taskId?: string
 }
 
 // ---------------------------------------------------------------------------

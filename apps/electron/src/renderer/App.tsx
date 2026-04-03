@@ -1330,10 +1330,22 @@ export default function App() {
       return
     }
 
-    const session = await handleCreateSession(windowWorkspaceId)
+    const session = await handleCreateSession(windowWorkspaceId, params.sessionOptions)
 
     if (params.name) {
       await window.electronAPI.sessionCommand(session.id, { type: 'rename', name: params.name })
+    }
+
+    // Link task to session if taskId provided
+    if (params.taskId) {
+      try {
+        await window.electronAPI.updateInboxTask(windowWorkspaceId, params.taskId, {
+          sessionId: session.id,
+          state: 'in_progress',
+        })
+      } catch (err) {
+        console.warn('[App] Failed to link task to session:', err)
+      }
     }
 
     // Navigate to the chat view - this sets both selectedSession and activeView

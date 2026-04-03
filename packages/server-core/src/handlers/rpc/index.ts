@@ -19,6 +19,7 @@ import { registerSkillsHandlers } from './skills'
 import { registerSourcesHandlers } from './sources'
 import { registerStatusesHandlers } from './statuses'
 import { registerSystemCoreHandlers } from './system'
+import { registerInboxHandlers } from './inbox'
 import { registerWorkspaceCoreHandlers } from './workspace'
 
 export function registerCoreRpcHandlers(
@@ -40,5 +41,6 @@ export function registerCoreRpcHandlers(
   registerSourcesHandlers(server, deps)
   registerStatusesHandlers(server, deps)
   registerSystemCoreHandlers(server, deps)
+  registerInboxHandlers(server, deps)
   registerWorkspaceCoreHandlers(server, deps)
 }
