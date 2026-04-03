@@ -116,7 +116,6 @@ import {
   isSkillsNavigation,
   isAutomationsNavigation,
   isInboxNavigation,
-  isTasksNavigation,
   isCalendarNavigation,
   type NavigationState,
 } from "@/contexts/NavigationContext"
@@ -124,11 +123,9 @@ import type { SettingsSubpage } from "../../../shared/types"
 import { SourcesListPanel } from "./SourcesListPanel"
 import { SkillsListPanel } from "./SkillsListPanel"
 import { AutomationsListPanel } from "../automations/AutomationsListPanel"
-import { TasksListPanel } from "./TasksListPanel"
 import { InboxListPanel } from "./InboxListPanel"
 import { CalendarListPanel } from "./CalendarListPanel"
 import { useInbox } from "@/hooks/useInbox"
-import { useTasks } from "@/hooks/useTasks"
 import { useCalendar } from "@/hooks/useCalendar"
 import { APP_EVENTS, AGENT_EVENTS, type AutomationFilterKind, AUTOMATION_TYPE_TO_FILTER_KIND } from "../automations/types"
 import { useAutomations } from "@/hooks/useAutomations"
@@ -847,9 +844,8 @@ function AppShellContent({
     getAutomationHistory, handleReplayAutomation,
   } = useAutomations(activeWorkspaceId, activeWorkspace?.rootPath)
 
-  // Inbox, Tasks, Calendar data
+  // Inbox, Calendar data
   const { messages: inboxMessages, refresh: refreshInbox } = useInbox(activeWorkspaceId ?? null)
-  const { tasks: inboxTasks, createTask: createInboxTask } = useTasks(activeWorkspaceId ?? null)
   const { events: calendarEvents, refresh: refreshCalendar } = useCalendar(activeWorkspaceId ?? null)
 
   // Whether local MCP servers are enabled (affects stdio source status)
@@ -2108,12 +2104,6 @@ function AppShellContent({
     // Settings navigator
     if (isSettingsNavigation(navState)) return 'Settings'
 
-    // Tasks navigator
-    if (isTasksNavigation(navState)) {
-      const filterLabels: Record<string, string> = { todo: 'Todo', in_progress: 'In Progress', done: 'Done', cancelled: 'Cancelled' }
-      return filterLabels[navState.filter] ?? 'All Tasks'
-    }
-
     // Inbox navigator
     if (isInboxNavigation(navState)) {
       return navState.filter === 'actionable' ? 'Actionable' : 'All Messages'
@@ -2371,53 +2361,7 @@ function AppShellContent({
                       items: buildLabelSidebarItems(labelTree),
                     },
                     // --- Separator ---
-                    { id: "separator:chats-tasks", type: "separator" },
-                    // --- Tasks Section ---
-                    {
-                      id: "nav:tasks",
-                      title: "Tasks",
-                      icon: ListTodo,
-                      variant: (isTasksNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
-                      onClick: () => navigate(routes.view.tasks()),
-                      expandable: true,
-                      expanded: isExpanded('nav:tasks'),
-                      onToggle: () => toggleExpanded('nav:tasks'),
-                      items: (() => {
-                        // Reuse session status icons so task items look identical
-                        const todoStatus = effectiveSessionStatuses.find(s => s.id === 'todo')
-                        const inProgressStatus = effectiveSessionStatuses.find(s => s.id === 'needs-review')
-                        const doneStatus = effectiveSessionStatuses.find(s => s.id === 'done')
-                        return [
-                          {
-                            id: "nav:tasks:todo",
-                            title: "Todo",
-                            variant: (isTasksNavigation(navState) && navState.filter === 'todo') ? "default" as const : "ghost" as const,
-                            onClick: () => navigate(routes.view.tasks({ filter: 'todo' })),
-                            icon: todoStatus?.icon ?? Circle,
-                            iconColor: todoStatus?.resolvedColor,
-                            iconColorable: todoStatus?.iconColorable ?? true,
-                          },
-                          {
-                            id: "nav:tasks:in-progress",
-                            title: "In Progress",
-                            variant: (isTasksNavigation(navState) && navState.filter === 'in_progress') ? "default" as const : "ghost" as const,
-                            onClick: () => navigate(routes.view.tasks({ filter: 'in_progress' })),
-                            icon: inProgressStatus?.icon ?? Clock,
-                            iconColor: inProgressStatus?.resolvedColor,
-                            iconColorable: inProgressStatus?.iconColorable ?? true,
-                          },
-                          {
-                            id: "nav:tasks:done",
-                            title: "Done",
-                            variant: (isTasksNavigation(navState) && navState.filter === 'done') ? "default" as const : "ghost" as const,
-                            onClick: () => navigate(routes.view.tasks({ filter: 'done' })),
-                            icon: doneStatus?.icon ?? CheckCircle2,
-                            iconColor: doneStatus?.resolvedColor,
-                            iconColorable: doneStatus?.iconColorable ?? true,
-                          },
-                        ]
-                      })(),
-                    },
+                    { id: "separator:chats-inbox", type: "separator" },
                     // --- Inbox Section ---
                     {
                       id: "nav:inbox",
@@ -3260,28 +3204,6 @@ function AppShellContent({
                 onDeleteAutomation={handleDeleteAutomation}
                 selectedAutomationId={isAutomationsNavigation(navState) && navState.details ? navState.details.automationId : null}
                 workspaceRootPath={activeWorkspace?.rootPath}
-              />
-            )}
-            {isTasksNavigation(navState) && (
-              /* Tasks List */
-              <TasksListPanel
-                tasks={inboxTasks}
-                filter={navState.filter}
-                selectedTaskId={navState.details?.taskId ?? null}
-                onTaskClick={(task) => navigate(routes.view.tasks({ taskId: task.id }))}
-                onAddTask={async () => {
-                  const task = await createInboxTask({
-                    id: `task:manual:${Date.now()}`,
-                    title: 'New Task',
-                    state: 'todo',
-                    priority: 'medium',
-                    source: 'manual',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  })
-                  navigate(routes.view.tasks({ taskId: task.id }))
-                }}
-                sessionStatuses={effectiveSessionStatuses}
               />
             )}
             {isInboxNavigation(navState) && (

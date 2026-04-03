@@ -163,3 +163,12 @@ export {
 
 // Export PowerShell validator root setter (for Electron startup on Windows)
 export { setPowerShellValidatorRoot } from './powershell-validator.ts';
+
+// Export simple LLM call utilities (provider-agnostic triage / classification)
+export {
+  type SimpleLlmCallFn,
+  type PiSimpleLlmCallFactory,
+  createAnthropicSimpleLlmCall,
+  registerPiSimpleLlmCallFactory,
+  createPiSimpleLlmCall,
+} from './simple-llm-call.ts';

@@ -8,13 +8,14 @@ import { MonthView } from '@/components/calendar/MonthView'
 import { EventDetail } from '@/components/calendar/EventDetail'
 import { useCalendar } from '@/hooks/useCalendar'
 import { calendarViewAtom, calendarSelectedDateAtom } from '@/atoms/calendar-atoms'
-import { useActiveWorkspace } from '@/context/AppShellContext'
+import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
 import type { CalendarEvent } from '@craft-agent/core/types'
 
 export default function CalendarPage() {
   const activeWorkspace = useActiveWorkspace()
   const workspaceId = activeWorkspace?.id ?? null
   const { events, isLoading, isSyncing, refresh } = useCalendar(workspaceId)
+  const { openNewChat } = useAppShellContext()
 
   const [view] = useAtom(calendarViewAtom)
   const [selectedDate, setSelectedDate] = useAtom(calendarSelectedDateAtom)
@@ -36,8 +37,23 @@ export default function CalendarPage() {
     // (calendarViewAtom is read-only here; the header controls it)
   }, [setSelectedDate])
 
+  const handleStartSession = useCallback(async () => {
+    if (!selectedEvent?.triage?.suggestedPrepPrompt || !openNewChat) return
+    await openNewChat({
+      input: selectedEvent.triage.suggestedPrepPrompt,
+      name: `Prep: ${selectedEvent.title}`,
+      calendarEventId: selectedEvent.id,
+    })
+  }, [selectedEvent, openNewChat])
+
   if (selectedEvent) {
-    return <EventDetail event={selectedEvent} onBack={handleBack} />
+    return (
+      <EventDetail
+        event={selectedEvent}
+        onBack={handleBack}
+        onStartSession={selectedEvent.triage?.needsPrep ? handleStartSession : undefined}
+      />
+    )
   }
 
   return (

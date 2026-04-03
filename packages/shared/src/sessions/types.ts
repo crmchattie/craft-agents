@@ -53,6 +53,9 @@ export const SESSION_PERSISTENT_FIELDS = [
   'transferredSessionSummaryApplied',
   // Automation origin
   'triggeredBy',
+  // Inbox / Calendar origin
+  'inboxMessageId',
+  'calendarEventId',
 ] as const;
 
 export type SessionPersistentField = typeof SESSION_PERSISTENT_FIELDS[number];
@@ -195,6 +198,10 @@ export interface SessionConfig {
   transferredSessionSummaryApplied?: boolean;
   /** Metadata for sessions created by automations */
   triggeredBy?: { automationName?: string; event?: string; timestamp?: number };
+  /** Inbox message that spawned this session */
+  inboxMessageId?: string;
+  /** Calendar event that spawned this session */
+  calendarEventId?: string;
 }
 
 /**
@@ -284,6 +291,10 @@ export interface SessionHeader {
   transferredSessionSummaryApplied?: boolean;
   /** Metadata for sessions created by automations */
   triggeredBy?: { automationName?: string; event?: string; timestamp?: number };
+  /** Inbox message that spawned this session */
+  inboxMessageId?: string;
+  /** Calendar event that spawned this session */
+  calendarEventId?: string;
   // Pre-computed fields for fast list loading
   /** Number of messages in session */
   messageCount: number;

@@ -4,20 +4,20 @@ import {
   MapPin,
   Clock,
   Users,
-  ExternalLink,
   Bot,
   Video,
+  Play,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Info_Badge } from '@/components/info'
 import type { CalendarEvent } from '@craft-agent/core/types'
 import { format } from 'date-fns'
-import { navigate, routes } from '@/lib/navigate'
 
 interface EventDetailProps {
   event: CalendarEvent
   onBack: () => void
+  onStartSession?: () => void
 }
 
 const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'muted'> = {
@@ -26,7 +26,7 @@ const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'muted'> = {
   declined: 'muted',
 }
 
-export function EventDetail({ event, onBack }: EventDetailProps) {
+export function EventDetail({ event, onBack, onStartSession }: EventDetailProps) {
   const startDate = new Date(event.startTime)
   const endDate = new Date(event.endTime)
   const color = event.calendarColor ?? '#3b82f6'
@@ -138,14 +138,12 @@ export function EventDetail({ event, onBack }: EventDetailProps) {
                   </p>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => navigate(routes.view.tasks({ taskId: `task:evt:${event.id}` }))}
-                className="text-xs text-info hover:underline flex items-center gap-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                View Prep Task
-              </button>
+              {onStartSession && (
+                <Button size="sm" onClick={onStartSession} className="gap-1.5">
+                  <Play className="h-3 w-3" />
+                  Start Session
+                </Button>
+              )}
             </div>
           )}
         </div>

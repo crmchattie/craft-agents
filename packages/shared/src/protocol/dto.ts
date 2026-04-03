@@ -128,6 +128,10 @@ export interface CreateSessionOptions {
   branchFromMessageId?: string
   /** Parent session ID used together with branchFromMessageId. */
   branchFromSessionId?: string
+  /** Inbox message that spawned this session */
+  inboxMessageId?: string
+  /** Calendar event that spawned this session */
+  calendarEventId?: string
 }
 
 export interface RemoteSessionTransferPayload {
@@ -246,7 +250,8 @@ export interface NewChatActionParams {
   input?: string
   name?: string
   sessionOptions?: Partial<CreateSessionOptions>
-  taskId?: string
+  inboxMessageId?: string
+  calendarEventId?: string
 }
 
 // ---------------------------------------------------------------------------

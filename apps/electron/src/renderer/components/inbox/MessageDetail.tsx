@@ -12,8 +12,6 @@ interface MessageDetailProps {
   threadMessages?: InboxMessage[]
   onBack: () => void
   onStartSession?: () => void
-  onDismiss?: () => void
-  onViewTask?: () => void
 }
 
 function formatDateTime(isoDate: string): string {
@@ -37,8 +35,6 @@ export function MessageDetail({
   threadMessages,
   onBack,
   onStartSession,
-  onDismiss,
-  onViewTask,
 }: MessageDetailProps) {
   return (
     <div className="flex flex-col h-full">
@@ -115,8 +111,6 @@ export function MessageDetail({
             <TriageCard
               triage={message.triage}
               onStartSession={onStartSession}
-              onDismiss={onDismiss}
-              onViewTask={onViewTask}
             />
           )}
         </div>

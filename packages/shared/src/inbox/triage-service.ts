@@ -1,16 +1,13 @@
 /**
- * TriageService — uses a cheap LLM (Haiku) to classify incoming messages
- * and calendar events, then creates tasks for actionable items.
+ * TriageService — classifies incoming messages and calendar events
+ * using an injected LLM call function (provider-agnostic).
  */
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { getDefaultOptions } from '../agent/options.ts';
 import { createLogger } from '../utils/debug.ts';
 import type { EventBus } from '../automations/event-bus.ts';
 import type {
   InboxMessage,
   CalendarEvent,
-  Task,
   MessageTriage,
   EventTriage,
   TriageCategory,
@@ -22,9 +19,8 @@ import {
   rewriteMessages,
   readEvents,
   replaceEvents,
-  readTasks,
-  createTask,
 } from './storage.ts';
+import type { SimpleLlmCallFn } from '../agent/simple-llm-call.ts';
 
 const log = createLogger('inbox-triage');
 
@@ -38,7 +34,7 @@ export interface TriageServiceOptions {
   workspaceRootPath: string;
   workspaceId: string;
   eventBus: EventBus;
-  resolveAuthEnvVars: () => Promise<Record<string, string>>;
+  callLlm: SimpleLlmCallFn;
 }
 
 export interface TriageResult {
@@ -91,13 +87,13 @@ export class TriageService {
   private readonly workspaceRootPath: string;
   private readonly workspaceId: string;
   private readonly eventBus: EventBus;
-  private readonly resolveAuthEnvVars: () => Promise<Record<string, string>>;
+  private readonly callLlm: SimpleLlmCallFn;
 
   constructor(options: TriageServiceOptions) {
     this.workspaceRootPath = options.workspaceRootPath;
     this.workspaceId = options.workspaceId;
     this.eventBus = options.eventBus;
-    this.resolveAuthEnvVars = options.resolveAuthEnvVars;
+    this.callLlm = options.callLlm;
   }
 
   /**
@@ -147,13 +143,10 @@ export class TriageService {
     if (untriaged.length === 0) return { triaged: 0, tasksCreated: 0 };
 
     log.debug(`Triaging ${untriaged.length} messages`);
-    const envVars = await this.resolveAuthEnvVars();
-    const existingTasks = new Set(readTasks(this.workspaceRootPath).map(t => t.inboxMessageId).filter(Boolean));
-    let tasksCreated = 0;
 
     for (let i = 0; i < untriaged.length; i += BATCH_SIZE) {
       const batch = untriaged.slice(i, i + BATCH_SIZE);
-      const triageResults = await this.callMessageTriage(batch, model, customInstructions, envVars);
+      const triageResults = await this.callMessageTriage(batch, model, customInstructions);
 
       for (let j = 0; j < batch.length; j++) {
         const result = triageResults[j];
@@ -171,37 +164,25 @@ export class TriageService {
         };
         msg.triage = triage;
 
-        if (triage.isActionable && !existingTasks.has(msg.id)) {
-          const task = this.createTaskFromMessage(msg);
-          tasksCreated++;
-          existingTasks.add(msg.id);
-
+        if (triage.isActionable) {
           await this.eventBus.emit('InboxActionableMessage', {
             workspaceId: this.workspaceId,
             timestamp: Date.now(),
             messageId: msg.id,
-            taskId: task.id,
-          });
-
-          await this.eventBus.emit('TaskCreated', {
-            workspaceId: this.workspaceId,
-            timestamp: Date.now(),
-            task,
           });
         }
       }
     }
 
     rewriteMessages(this.workspaceRootPath, messages);
-    log.debug(`Triaged ${untriaged.length} messages, created ${tasksCreated} tasks`);
-    return { triaged: untriaged.length, tasksCreated };
+    log.debug(`Triaged ${untriaged.length} messages`);
+    return { triaged: untriaged.length, tasksCreated: 0 };
   }
 
   private async callMessageTriage(
     batch: InboxMessage[],
     model: string,
     customInstructions: string,
-    envVars: Record<string, string>,
   ): Promise<MessageTriageResponse[]> {
     const userContent = batch.map((m, i) => {
       const parts = [`[${i}] From: ${m.from.name}`];
@@ -215,7 +196,7 @@ export class TriageService {
       ? `${MESSAGE_TRIAGE_SYSTEM}\n\nAdditional context:\n${customInstructions}`
       : MESSAGE_TRIAGE_SYSTEM;
 
-    const raw = await callLlm(systemPrompt, userContent, model, envVars);
+    const raw = await this.callLlm({ systemPrompt, userPrompt: userContent, model });
     return parseJsonArray<MessageTriageResponse>(raw, batch.length);
   }
 
@@ -232,13 +213,10 @@ export class TriageService {
     if (untriaged.length === 0) return { triaged: 0, tasksCreated: 0 };
 
     log.debug(`Triaging ${untriaged.length} calendar events`);
-    const envVars = await this.resolveAuthEnvVars();
-    const existingTasks = new Set(readTasks(this.workspaceRootPath).map(t => t.calendarEventId).filter(Boolean));
-    let tasksCreated = 0;
 
     for (let i = 0; i < untriaged.length; i += BATCH_SIZE) {
       const batch = untriaged.slice(i, i + BATCH_SIZE);
-      const triageResults = await this.callEventTriage(batch, model, customInstructions, envVars);
+      const triageResults = await this.callEventTriage(batch, model, customInstructions);
 
       for (let j = 0; j < batch.length; j++) {
         const result = triageResults[j];
@@ -253,31 +231,18 @@ export class TriageService {
           model,
         };
         evt.triage = triage;
-
-        if (triage.needsPrep && !existingTasks.has(evt.id)) {
-          const task = this.createTaskFromEvent(evt);
-          tasksCreated++;
-          existingTasks.add(evt.id);
-
-          await this.eventBus.emit('TaskCreated', {
-            workspaceId: this.workspaceId,
-            timestamp: Date.now(),
-            task,
-          });
-        }
       }
     }
 
     replaceEvents(this.workspaceRootPath, events);
-    log.debug(`Triaged ${untriaged.length} events, created ${tasksCreated} tasks`);
-    return { triaged: untriaged.length, tasksCreated };
+    log.debug(`Triaged ${untriaged.length} events`);
+    return { triaged: untriaged.length, tasksCreated: 0 };
   }
 
   private async callEventTriage(
     batch: CalendarEvent[],
     model: string,
     customInstructions: string,
-    envVars: Record<string, string>,
   ): Promise<EventTriageResponse[]> {
     const userContent = batch.map((e, i) => {
       const parts = [`[${i}] Title: ${e.title}`];
@@ -292,72 +257,10 @@ export class TriageService {
       ? `${CALENDAR_TRIAGE_SYSTEM}\n\nAdditional context:\n${customInstructions}`
       : CALENDAR_TRIAGE_SYSTEM;
 
-    const raw = await callLlm(systemPrompt, userContent, model, envVars);
+    const raw = await this.callLlm({ systemPrompt, userPrompt: userContent, model });
     return parseJsonArray<EventTriageResponse>(raw, batch.length);
   }
 
-  // ============================================================================
-  // Task creation
-  // ============================================================================
-
-  private createTaskFromMessage(message: InboxMessage): Task {
-    return createTask(this.workspaceRootPath, {
-      id: `task:msg:${message.id}`,
-      title: message.triage!.summary,
-      state: 'todo',
-      priority: message.triage!.priority,
-      source: 'inbox_triage',
-      inboxMessageId: message.id,
-      preparedPrompt: message.triage!.suggestedPrompt,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-  }
-
-  private createTaskFromEvent(event: CalendarEvent): Task {
-    return createTask(this.workspaceRootPath, {
-      id: `task:evt:${event.id}`,
-      title: `Prep: ${event.title}`,
-      state: 'todo',
-      priority: 'medium',
-      source: 'calendar_triage',
-      calendarEventId: event.id,
-      preparedPrompt: event.triage!.suggestedPrepPrompt,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-  }
-}
-
-// ============================================================================
-// LLM calling helper
-// ============================================================================
-
-async function callLlm(
-  systemPrompt: string,
-  userPrompt: string,
-  model: string,
-  envOverrides: Record<string, string>,
-): Promise<string> {
-  const options = {
-    ...getDefaultOptions(envOverrides),
-    model,
-    maxTurns: 1,
-    systemPrompt,
-    thinking: { type: 'disabled' as const },
-  };
-
-  let result = '';
-  for await (const msg of query({ prompt: userPrompt, options })) {
-    if (msg.type === 'assistant') {
-      for (const block of msg.message.content) {
-        if (block.type === 'text') {
-          result += block.text;
-        }
-      }
-    }
-  }
-  return result.trim();
 }
 
 // ============================================================================

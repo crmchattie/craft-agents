@@ -2398,6 +2398,8 @@ export class SessionManager implements ISessionManager {
       sessionStatus: options?.sessionStatus,
       labels: options?.labels,
       isFlagged: options?.isFlagged,
+      inboxMessageId: options?.inboxMessageId,
+      calendarEventId: options?.calendarEventId,
     })
 
     // Branch: copy messages from source session up to and including the branch point

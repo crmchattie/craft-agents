@@ -187,6 +187,8 @@ export async function createSession(
     sessionStatus?: SessionConfig['sessionStatus'];
     labels?: string[];
     isFlagged?: boolean;
+    inboxMessageId?: string;
+    calendarEventId?: string;
   }
 ): Promise<SessionConfig> {
   ensureSessionsDir(workspaceRootPath);
@@ -218,6 +220,8 @@ export async function createSession(
     sessionStatus: options?.sessionStatus,
     labels: options?.labels,
     isFlagged: options?.isFlagged,
+    inboxMessageId: options?.inboxMessageId,
+    calendarEventId: options?.calendarEventId,
   };
 
   // Save empty session

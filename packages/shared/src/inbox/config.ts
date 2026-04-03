@@ -29,6 +29,8 @@ export interface InboxConfig {
   triageCustomInstructions: string;
   triageCalendar: boolean;
   calendarLookaheadHours: number;
+  /** LLM connection slug to use for triage. Empty = workspace default. */
+  triageConnection: string;
   sources: InboxSourceConfig[];
 }
 
@@ -40,10 +42,11 @@ export const DEFAULT_INBOX_CONFIG: InboxConfig = {
   backgroundSyncEnabled: true,
   syncIntervalMinutes: 5,
   triageEnabled: true,
-  triageModel: 'claude-haiku-4-5-20251001',
+  triageModel: '',
   triageCustomInstructions: '',
   triageCalendar: true,
   calendarLookaheadHours: 24,
+  triageConnection: '',
   sources: [],
 };
 

@@ -79,7 +79,7 @@ export interface InboxNewMessagesPayload extends BaseEventPayload {
 /** A message was triaged as actionable */
 export interface InboxActionableMessagePayload extends BaseEventPayload {
   messageId: string;
-  taskId: string;
+  taskId?: string;
 }
 
 /** Sync encountered an error */

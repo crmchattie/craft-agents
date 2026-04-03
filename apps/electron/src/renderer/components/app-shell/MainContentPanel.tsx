@@ -31,7 +31,6 @@ import {
   isSkillsNavigation,
   isAutomationsNavigation,
   isInboxNavigation,
-  isTasksNavigation,
   isCalendarNavigation,
 } from '@/contexts/NavigationContext'
 import { useSessionSelection, useIsMultiSelectActive, useSelectedIds, useSelectionCount } from '@/hooks/useSession'
@@ -45,7 +44,6 @@ import { AutomationInfoPage } from '../automations/AutomationInfoPage'
 import type { ExecutionEntry } from '../automations/types'
 import { automationsAtom } from '@/atoms/automations'
 import InboxPage from '@/pages/InboxPage'
-import TasksPage from '@/pages/TasksPage'
 import CalendarPage from '@/pages/CalendarPage'
 
 export interface MainContentPanelProps {
@@ -311,15 +309,6 @@ export function MainContentPanel({
     return wrapWithStoplight(
       <Panel variant="grow" className={className}>
         <InboxPage />
-      </Panel>
-    )
-  }
-
-  // Tasks navigator
-  if (isTasksNavigation(navState)) {
-    return wrapWithStoplight(
-      <Panel variant="grow" className={className}>
-        <TasksPage />
       </Panel>
     )
   }

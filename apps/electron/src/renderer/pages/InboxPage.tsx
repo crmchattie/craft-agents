@@ -3,7 +3,6 @@ import { useCallback } from 'react'
 import { Mail } from 'lucide-react'
 import { MessageDetail } from '@/components/inbox/MessageDetail'
 import { useInbox } from '@/hooks/useInbox'
-import { useTasks } from '@/hooks/useTasks'
 import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
 import { useNavigationState, isInboxNavigation } from '@/contexts/NavigationContext'
 import { navigate, routes } from '@/lib/navigate'
@@ -12,7 +11,6 @@ export default function InboxPage() {
   const activeWorkspace = useActiveWorkspace()
   const workspaceId = activeWorkspace?.id ?? null
   const { messages } = useInbox(workspaceId)
-  const { updateTask } = useTasks(workspaceId)
   const { openNewChat } = useAppShellContext()
   const navState = useNavigationState()
 
@@ -39,15 +37,9 @@ export default function InboxPage() {
     await openNewChat({
       input: selectedMessage.triage.suggestedPrompt,
       name: selectedMessage.triage.summary,
-      taskId: `task:msg:${selectedMessage.id}`,
+      inboxMessageId: selectedMessage.id,
     })
   }, [selectedMessage, openNewChat])
-
-  const handleDismiss = useCallback(async () => {
-    if (!selectedMessage) return
-    await updateTask(`task:msg:${selectedMessage.id}`, { state: 'cancelled' })
-    navigate(routes.view.inbox())
-  }, [selectedMessage, updateTask])
 
   if (selectedMessage) {
     // Mark as read
@@ -61,8 +53,6 @@ export default function InboxPage() {
         threadMessages={threadMessages}
         onBack={handleBack}
         onStartSession={selectedMessage.triage?.isActionable ? handleStartSession : undefined}
-        onDismiss={selectedMessage.triage?.isActionable ? handleDismiss : undefined}
-        onViewTask={selectedMessage.triage?.isActionable ? () => navigate(routes.view.tasks({ taskId: `task:msg:${selectedMessage.id}` })) : undefined}
       />
     )
   }
