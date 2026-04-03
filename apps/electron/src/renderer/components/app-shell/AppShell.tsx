@@ -34,6 +34,7 @@ import {
   Star,
   Circle,
   CheckCircle2,
+  Mail,
 } from "lucide-react"
 // SessionStatusIcons no longer used - icons come from dynamic sessionStatuses
 import { SourceAvatar } from "@/components/ui/source-avatar"
@@ -847,9 +848,9 @@ function AppShellContent({
   } = useAutomations(activeWorkspaceId, activeWorkspace?.rootPath)
 
   // Inbox, Tasks, Calendar data
-  const { messages: inboxMessages } = useInbox(activeWorkspaceId ?? null)
-  const { tasks: inboxTasks } = useTasks(activeWorkspaceId ?? null)
-  const { events: calendarEvents } = useCalendar(activeWorkspaceId ?? null)
+  const { messages: inboxMessages, refresh: refreshInbox } = useInbox(activeWorkspaceId ?? null)
+  const { tasks: inboxTasks, createTask: createInboxTask } = useTasks(activeWorkspaceId ?? null)
+  const { events: calendarEvents, refresh: refreshCalendar } = useCalendar(activeWorkspaceId ?? null)
 
   // Whether local MCP servers are enabled (affects stdio source status)
   const [localMcpEnabled, setLocalMcpEnabled] = React.useState(true)
@@ -2421,7 +2422,7 @@ function AppShellContent({
                     {
                       id: "nav:inbox",
                       title: "Inbox",
-                      icon: Inbox,
+                      icon: Mail,
                       variant: (isInboxNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.inbox()),
                       expandable: true,
@@ -3268,6 +3269,18 @@ function AppShellContent({
                 filter={navState.filter}
                 selectedTaskId={navState.details?.taskId ?? null}
                 onTaskClick={(task) => navigate(routes.view.tasks({ taskId: task.id }))}
+                onAddTask={async () => {
+                  const task = await createInboxTask({
+                    id: `task:manual:${Date.now()}`,
+                    title: 'New Task',
+                    state: 'todo',
+                    priority: 'medium',
+                    source: 'manual',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  })
+                  navigate(routes.view.tasks({ taskId: task.id }))
+                }}
                 sessionStatuses={effectiveSessionStatuses}
               />
             )}
@@ -3278,6 +3291,7 @@ function AppShellContent({
                 filter={navState.filter}
                 selectedMessageId={navState.details?.messageId ?? null}
                 onMessageClick={(message) => navigate(routes.view.inbox({ messageId: message.id }))}
+                onRefresh={refreshInbox}
               />
             )}
             {isCalendarNavigation(navState) && (
@@ -3286,6 +3300,7 @@ function AppShellContent({
                 events={calendarEvents}
                 selectedEventId={navState.details?.eventId ?? null}
                 onEventClick={(event) => navigate(routes.view.calendar({ eventId: event.id }))}
+                onRefresh={refreshCalendar}
               />
             )}
             {isSettingsNavigation(navState) && (

@@ -24,6 +24,7 @@ export interface TasksListPanelProps {
   filter?: string
   selectedTaskId?: string | null
   onTaskClick: (task: Task) => void
+  onAddTask?: () => void
   sessionStatuses?: SessionStatus[]
   className?: string
 }
@@ -33,6 +34,7 @@ export function TasksListPanel({
   filter,
   selectedTaskId,
   onTaskClick,
+  onAddTask,
   sessionStatuses,
   className,
 }: TasksListPanelProps) {
@@ -63,7 +65,16 @@ export function TasksListPanel({
           icon={<ListTodo />}
           title={filter && filter !== 'all' ? `No ${filter.replace('_', ' ')} tasks.` : 'No tasks yet.'}
           description="Actionable messages will create tasks automatically, or add one manually."
-        />
+        >
+          {onAddTask && (
+            <button
+              onClick={onAddTask}
+              className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
+            >
+              New Task
+            </button>
+          )}
+        </EntityListEmptyScreen>
       }
       mapItem={(task) => ({
         icon: getStatusIcon(task.state),

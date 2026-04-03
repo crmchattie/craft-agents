@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Inbox, MessageSquare, Mail, Star, Circle } from 'lucide-react'
+import { Mail, MessageSquare, Star, Circle } from 'lucide-react'
 import { EntityPanel } from '@/components/ui/entity-panel'
 import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
@@ -26,6 +26,7 @@ export interface InboxListPanelProps {
   filter?: string
   selectedMessageId?: string | null
   onMessageClick: (message: InboxMessage) => void
+  onRefresh?: () => void
   className?: string
 }
 
@@ -34,6 +35,7 @@ export function InboxListPanel({
   filter,
   selectedMessageId,
   onMessageClick,
+  onRefresh,
   className,
 }: InboxListPanelProps) {
   const filteredMessages = React.useMemo(() => {
@@ -54,10 +56,19 @@ export function InboxListPanel({
       className={className}
       emptyState={
         <EntityListEmptyScreen
-          icon={<Inbox />}
+          icon={<Mail />}
           title={filter === 'actionable' ? 'No actionable messages.' : 'No messages yet.'}
           description="Connect an inbox source and hit refresh to pull in messages."
-        />
+        >
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
+            >
+              Refresh Inbox
+            </button>
+          )}
+        </EntityListEmptyScreen>
       }
       mapItem={(message) => ({
         icon: message.sourceType === 'slack'

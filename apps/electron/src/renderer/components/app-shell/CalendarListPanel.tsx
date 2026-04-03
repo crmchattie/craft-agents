@@ -11,6 +11,7 @@ export interface CalendarListPanelProps {
   events: CalendarEvent[]
   selectedEventId?: string | null
   onEventClick: (event: CalendarEvent) => void
+  onRefresh?: () => void
   className?: string
 }
 
@@ -18,6 +19,7 @@ export function CalendarListPanel({
   events,
   selectedEventId,
   onEventClick,
+  onRefresh,
   className,
 }: CalendarListPanelProps) {
   const sortedEvents = React.useMemo(() => {
@@ -37,7 +39,16 @@ export function CalendarListPanel({
           icon={<Calendar />}
           title="No events."
           description="Connect a calendar source and hit refresh to pull in events."
-        />
+        >
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
+            >
+              Refresh Calendar
+            </button>
+          )}
+        </EntityListEmptyScreen>
       }
       mapItem={(event) => {
         const startDate = new Date(event.startTime)

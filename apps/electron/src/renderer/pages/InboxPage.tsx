@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useCallback } from 'react'
-import { Inbox } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { MessageDetail } from '@/components/inbox/MessageDetail'
 import { useInbox } from '@/hooks/useInbox'
 import { useTasks } from '@/hooks/useTasks'
@@ -70,7 +70,7 @@ export default function InboxPage() {
   // Empty state — no message selected
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-foreground/40 gap-3">
-      <Inbox className="h-10 w-10" />
+      <Mail className="h-10 w-10" />
       <p className="text-sm">Select a message to view details</p>
     </div>
   )
