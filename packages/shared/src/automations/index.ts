@@ -117,6 +117,12 @@ export {
   type GenericEventPayload,
   type EventHandler,
   type AnyEventHandler,
+  type InboxNewMessagesPayload,
+  type InboxActionableMessagePayload,
+  type InboxSyncErrorPayload,
+  type TaskCreatedPayload,
+  type TaskStateChangedPayload,
+  type CalendarEventsPreparedPayload,
 } from './event-bus.ts';
 
 // AutomationSystem facade

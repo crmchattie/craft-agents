@@ -14,6 +14,7 @@
 
 import { createLogger } from '../utils/debug.ts';
 import type { AppEvent, AgentEvent, AutomationEvent } from './types.ts';
+import type { Task } from '@craft-agent/core/types';
 
 const log = createLogger('event-bus');
 
@@ -68,6 +69,43 @@ export interface GenericEventPayload extends BaseEventPayload {
   data: Record<string, unknown>;
 }
 
+/** New messages arrived from sync */
+export interface InboxNewMessagesPayload extends BaseEventPayload {
+  sourceSlug: string;
+  messageIds: string[];
+  count: number;
+}
+
+/** A message was triaged as actionable */
+export interface InboxActionableMessagePayload extends BaseEventPayload {
+  messageId: string;
+  taskId: string;
+}
+
+/** Sync encountered an error */
+export interface InboxSyncErrorPayload extends BaseEventPayload {
+  sourceSlug: string;
+  error: string;
+}
+
+/** A task was created */
+export interface TaskCreatedPayload extends BaseEventPayload {
+  task: Task;
+}
+
+/** A task changed state */
+export interface TaskStateChangedPayload extends BaseEventPayload {
+  taskId: string;
+  previousState: string;
+  newState: string;
+}
+
+/** Calendar events were synced */
+export interface CalendarEventsPreparedPayload extends BaseEventPayload {
+  eventIds: string[];
+  sourceSlug: string;
+}
+
 // ============================================================================
 // Event Payload Map
 // ============================================================================
@@ -84,6 +122,14 @@ export interface EventPayloadMap {
   FlagChange: FlagChangePayload;
   SessionStatusChange: SessionStatusChangePayload;
   SchedulerTick: SchedulerTickPayload;
+
+  // Inbox events
+  InboxNewMessages: InboxNewMessagesPayload;
+  InboxActionableMessage: InboxActionableMessagePayload;
+  InboxSyncError: InboxSyncErrorPayload;
+  TaskCreated: TaskCreatedPayload;
+  TaskStateChanged: TaskStateChangedPayload;
+  CalendarEventsPrepared: CalendarEventsPreparedPayload;
 
   // Agent events (generic payload)
   PreToolUse: GenericEventPayload;

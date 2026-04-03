@@ -18,7 +18,13 @@ export type AppEvent =
   | 'PermissionModeChange'
   | 'FlagChange'
   | 'SessionStatusChange'
-  | 'SchedulerTick';
+  | 'SchedulerTick'
+  | 'InboxNewMessages'
+  | 'InboxActionableMessage'
+  | 'InboxSyncError'
+  | 'TaskCreated'
+  | 'TaskStateChanged'
+  | 'CalendarEventsPrepared';
 
 /** Agent events - passed to Claude SDK */
 export type AgentEvent =
@@ -40,7 +46,9 @@ export type AutomationEvent = AppEvent | AgentEvent;
 
 export const APP_EVENTS: AppEvent[] = [
   'LabelAdd', 'LabelRemove', 'LabelConfigChange',
-  'PermissionModeChange', 'FlagChange', 'SessionStatusChange', 'SchedulerTick'
+  'PermissionModeChange', 'FlagChange', 'SessionStatusChange', 'SchedulerTick',
+  'InboxNewMessages', 'InboxActionableMessage', 'InboxSyncError',
+  'TaskCreated', 'TaskStateChanged', 'CalendarEventsPrepared',
 ];
 
 export const AGENT_EVENTS: AgentEvent[] = [

@@ -64,3 +64,21 @@ export type {
   ActiveSessionInfo,
 } from './server.ts';
 
+// Inbox, Tasks & Calendar types
+export type {
+  InboxSourceType,
+  TriageCategory,
+  TriagePriority,
+  TaskState,
+  TaskSource,
+  AttendeeStatus,
+  InboxContact,
+  InboxAttachment,
+  MessageTriage,
+  EventTriage,
+  EventAttendee,
+  InboxMessage,
+  CalendarEvent,
+  Task,
+} from './inbox.ts';
+
