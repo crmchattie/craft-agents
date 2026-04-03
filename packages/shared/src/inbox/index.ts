@@ -46,3 +46,7 @@ export { InboxSyncService } from './sync-service.ts';
 
 // Sync handler (SchedulerTick integration)
 export { InboxSyncHandler } from './sync-handler.ts';
+
+// Triage service
+export type { TriageServiceOptions, TriageResult } from './triage-service.ts';
+export { TriageService } from './triage-service.ts';

@@ -95,8 +95,8 @@ describe('inbox storage', () => {
       appendMessages(TEST_DIR, [makeMessage('1'), makeMessage('2')]);
       const msgs = readMessages(TEST_DIR);
       expect(msgs).toHaveLength(2);
-      expect(msgs[0].id).toBe('1');
-      expect(msgs[1].id).toBe('2');
+      expect(msgs[0]!.id).toBe('1');
+      expect(msgs[1]!.id).toBe('2');
     });
 
     it('appends incrementally', () => {
@@ -110,8 +110,8 @@ describe('inbox storage', () => {
       rewriteMessages(TEST_DIR, [makeMessage('1', { isRead: true }), makeMessage('3')]);
       const msgs = readMessages(TEST_DIR);
       expect(msgs).toHaveLength(2);
-      expect(msgs[0].isRead).toBe(true);
-      expect(msgs[1].id).toBe('3');
+      expect(msgs[0]!.isRead).toBe(true);
+      expect(msgs[1]!.id).toBe('3');
     });
 
     it('skips corrupted lines', () => {
@@ -146,7 +146,7 @@ describe('inbox storage', () => {
       replaceEvents(TEST_DIR, [makeEvent('e3')]);
       const events = readEvents(TEST_DIR);
       expect(events).toHaveLength(1);
-      expect(events[0].id).toBe('e3');
+      expect(events[0]!.id).toBe('e3');
     });
   });
 
@@ -166,7 +166,7 @@ describe('inbox storage', () => {
       const updated = updateTask(TEST_DIR, 't1', { state: 'in_progress', title: 'Updated' });
       expect(updated?.state).toBe('in_progress');
       expect(updated?.title).toBe('Updated');
-      expect(readTasks(TEST_DIR)[0].state).toBe('in_progress');
+      expect(readTasks(TEST_DIR)[0]!.state).toBe('in_progress');
     });
 
     it('returns null when updating nonexistent task', () => {
@@ -178,7 +178,7 @@ describe('inbox storage', () => {
       createTask(TEST_DIR, makeTask('t2'));
       expect(deleteTask(TEST_DIR, 't1')).toBe(true);
       expect(readTasks(TEST_DIR)).toHaveLength(1);
-      expect(readTasks(TEST_DIR)[0].id).toBe('t2');
+      expect(readTasks(TEST_DIR)[0]!.id).toBe('t2');
     });
 
     it('returns false when deleting nonexistent task', () => {
@@ -199,9 +199,9 @@ describe('inbox storage', () => {
       };
       writeSyncState(TEST_DIR, state);
       const loaded = readSyncState(TEST_DIR);
-      expect(loaded.cursors.slack.lastSyncAt).toBe('2026-04-02T10:00:00Z');
-      expect(loaded.cursors.slack.cursor).toBe('abc');
-      expect(loaded.cursors.slack.lastFetchCount).toBe(5);
+      expect(loaded.cursors.slack!.lastSyncAt).toBe('2026-04-02T10:00:00Z');
+      expect(loaded.cursors.slack!.cursor).toBe('abc');
+      expect(loaded.cursors.slack!.lastFetchCount).toBe(5);
     });
   });
 });

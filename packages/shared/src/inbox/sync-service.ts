@@ -17,6 +17,7 @@ import {
   type SyncState,
   type SyncCursor,
 } from './storage.ts';
+import type { TriageService } from './triage-service.ts';
 
 const log = createLogger('inbox-sync');
 
@@ -29,6 +30,7 @@ export interface InboxSyncServiceOptions {
   workspaceId: string;
   eventBus: EventBus;
   mcpPool: McpClientPool;
+  triageService?: TriageService;
 }
 
 export interface SyncResult {
@@ -46,6 +48,7 @@ export class InboxSyncService {
   private readonly workspaceId: string;
   private readonly eventBus: EventBus;
   private readonly mcpPool: McpClientPool;
+  private readonly triageService?: TriageService;
   private lastSyncTime = 0;
   private syncing = false;
 
@@ -54,6 +57,7 @@ export class InboxSyncService {
     this.workspaceId = options.workspaceId;
     this.eventBus = options.eventBus;
     this.mcpPool = options.mcpPool;
+    this.triageService = options.triageService;
   }
 
   /**
@@ -82,6 +86,17 @@ export class InboxSyncService {
     try {
       const result = await this.runSync(config);
       this.lastSyncTime = Date.now();
+
+      // Run triage on new data if service is available
+      if (this.triageService && config.triageEnabled) {
+        try {
+          const triageResult = await this.triageService.triageAll();
+          log.debug(`Triage complete: ${triageResult.messagesTriaged} messages, ${triageResult.eventsTriaged} events, ${triageResult.tasksCreated} tasks`);
+        } catch (error) {
+          log.error('Post-sync triage failed:', error);
+        }
+      }
+
       return result;
     } finally {
       this.syncing = false;

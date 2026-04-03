@@ -81,8 +81,8 @@ describe('InboxSyncService', () => {
 
     const messages = readMessages(TEST_DIR);
     expect(messages).toHaveLength(2);
-    expect(messages[0].sourceSlug).toBe('slack');
-    expect(messages[0].sourceType).toBe('slack');
+    expect(messages[0]!.sourceSlug).toBe('slack');
+    expect(messages[0]!.sourceType).toBe('slack');
   });
 
   it('deduplicates messages on subsequent syncs', async () => {
@@ -126,7 +126,7 @@ describe('InboxSyncService', () => {
     expect(result.newEventCount).toBe(1);
     const events = readEvents(TEST_DIR);
     expect(events).toHaveLength(1);
-    expect(events[0].title).toBe('Standup');
+    expect(events[0]!.title).toBe('Standup');
   });
 
   it('emits InboxNewMessages event', async () => {
@@ -218,7 +218,7 @@ describe('InboxSyncService', () => {
 
     const state = readSyncState(TEST_DIR);
     expect(state.cursors.slack).toBeDefined();
-    expect(state.cursors.slack.lastSyncAt).toBeTruthy();
+    expect(state.cursors.slack!.lastSyncAt).toBeTruthy();
   });
 
   it('prevents concurrent syncs', async () => {
@@ -241,5 +241,61 @@ describe('InboxSyncService', () => {
     const [r1, r2] = await Promise.all([p1, p2]);
     expect(pool.callTool).toHaveBeenCalledTimes(1);
     expect(r2.errors[0]).toContain('already in progress');
+  });
+
+  it('calls triageService.triageAll after sync when provided', async () => {
+    writeConfig([
+      { sourceSlug: 'slack', sourceType: 'slack', enabled: true, fetchToolName: 'list_messages' },
+    ]);
+
+    const pool = makeMockPool({
+      'mcp__slack__list_messages': { content: '[]', isError: false },
+    });
+
+    const triageAll = jest.fn(async () => ({ messagesTriaged: 0, eventsTriaged: 0, tasksCreated: 0 }));
+    const mockTriageService = { triageAll } as any;
+
+    const service = new InboxSyncService({
+      workspaceRootPath: TEST_DIR,
+      workspaceId: 'test-workspace',
+      eventBus,
+      mcpPool: pool,
+      triageService: mockTriageService,
+    });
+
+    await service.sync(true);
+
+    expect(triageAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call triage when triageEnabled is false in config', async () => {
+    writeFileSync(
+      getInboxConfigPath(TEST_DIR),
+      JSON.stringify({
+        backgroundSyncEnabled: true,
+        syncIntervalMinutes: 1,
+        triageEnabled: false,
+        sources: [{ sourceSlug: 'slack', sourceType: 'slack', enabled: true, fetchToolName: 'list_messages' }],
+      }),
+    );
+
+    const pool = makeMockPool({
+      'mcp__slack__list_messages': { content: '[]', isError: false },
+    });
+
+    const triageAll = jest.fn(async () => ({ messagesTriaged: 0, eventsTriaged: 0, tasksCreated: 0 }));
+    const mockTriageService = { triageAll } as any;
+
+    const service = new InboxSyncService({
+      workspaceRootPath: TEST_DIR,
+      workspaceId: 'test-workspace',
+      eventBus,
+      mcpPool: pool,
+      triageService: mockTriageService,
+    });
+
+    await service.sync(true);
+
+    expect(triageAll).not.toHaveBeenCalled();
   });
 });
