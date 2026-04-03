@@ -123,6 +123,12 @@ import type { SettingsSubpage } from "../../../shared/types"
 import { SourcesListPanel } from "./SourcesListPanel"
 import { SkillsListPanel } from "./SkillsListPanel"
 import { AutomationsListPanel } from "../automations/AutomationsListPanel"
+import { TasksListPanel } from "./TasksListPanel"
+import { InboxListPanel } from "./InboxListPanel"
+import { CalendarListPanel } from "./CalendarListPanel"
+import { useInbox } from "@/hooks/useInbox"
+import { useTasks } from "@/hooks/useTasks"
+import { useCalendar } from "@/hooks/useCalendar"
 import { APP_EVENTS, AGENT_EVENTS, type AutomationFilterKind, AUTOMATION_TYPE_TO_FILTER_KIND } from "../automations/types"
 import { useAutomations } from "@/hooks/useAutomations"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -839,6 +845,11 @@ function AppShellContent({
     handleTestAutomation, handleToggleAutomation, handleDuplicateAutomation, handleDeleteAutomation, confirmDeleteAutomation,
     getAutomationHistory, handleReplayAutomation,
   } = useAutomations(activeWorkspaceId, activeWorkspace?.rootPath)
+
+  // Inbox, Tasks, Calendar data
+  const { messages: inboxMessages } = useInbox(activeWorkspaceId ?? null)
+  const { tasks: inboxTasks } = useTasks(activeWorkspaceId ?? null)
+  const { events: calendarEvents } = useCalendar(activeWorkspaceId ?? null)
 
   // Whether local MCP servers are enabled (affects stdio source status)
   const [localMcpEnabled, setLocalMcpEnabled] = React.useState(true)
@@ -2096,6 +2107,20 @@ function AppShellContent({
     // Settings navigator
     if (isSettingsNavigation(navState)) return 'Settings'
 
+    // Tasks navigator
+    if (isTasksNavigation(navState)) {
+      const filterLabels: Record<string, string> = { todo: 'Todo', in_progress: 'In Progress', done: 'Done', cancelled: 'Cancelled' }
+      return filterLabels[navState.filter] ?? 'All Tasks'
+    }
+
+    // Inbox navigator
+    if (isInboxNavigation(navState)) {
+      return navState.filter === 'actionable' ? 'Actionable' : 'All Messages'
+    }
+
+    // Calendar navigator
+    if (isCalendarNavigation(navState)) return 'Calendar'
+
     // Sessions navigator - use sessionFilter
     if (!sessionFilter) return 'All Sessions'
 
@@ -2345,65 +2370,70 @@ function AppShellContent({
                       items: buildLabelSidebarItems(labelTree),
                     },
                     // --- Separator ---
-                    { id: "separator:chats-inbox", type: "separator" },
+                    { id: "separator:chats-tasks", type: "separator" },
+                    // --- Tasks Section ---
+                    {
+                      id: "nav:tasks",
+                      title: "Tasks",
+                      icon: ListTodo,
+                      variant: (isTasksNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
+                      onClick: () => navigate(routes.view.tasks()),
+                      expandable: true,
+                      expanded: isExpanded('nav:tasks'),
+                      onToggle: () => toggleExpanded('nav:tasks'),
+                      items: (() => {
+                        // Reuse session status icons so task items look identical
+                        const todoStatus = effectiveSessionStatuses.find(s => s.id === 'todo')
+                        const inProgressStatus = effectiveSessionStatuses.find(s => s.id === 'needs-review')
+                        const doneStatus = effectiveSessionStatuses.find(s => s.id === 'done')
+                        return [
+                          {
+                            id: "nav:tasks:todo",
+                            title: "Todo",
+                            variant: (isTasksNavigation(navState) && navState.filter === 'todo') ? "default" as const : "ghost" as const,
+                            onClick: () => navigate(routes.view.tasks({ filter: 'todo' })),
+                            icon: todoStatus?.icon ?? Circle,
+                            iconColor: todoStatus?.resolvedColor,
+                            iconColorable: todoStatus?.iconColorable ?? true,
+                          },
+                          {
+                            id: "nav:tasks:in-progress",
+                            title: "In Progress",
+                            variant: (isTasksNavigation(navState) && navState.filter === 'in_progress') ? "default" as const : "ghost" as const,
+                            onClick: () => navigate(routes.view.tasks({ filter: 'in_progress' })),
+                            icon: inProgressStatus?.icon ?? Clock,
+                            iconColor: inProgressStatus?.resolvedColor,
+                            iconColorable: inProgressStatus?.iconColorable ?? true,
+                          },
+                          {
+                            id: "nav:tasks:done",
+                            title: "Done",
+                            variant: (isTasksNavigation(navState) && navState.filter === 'done') ? "default" as const : "ghost" as const,
+                            onClick: () => navigate(routes.view.tasks({ filter: 'done' })),
+                            icon: doneStatus?.icon ?? CheckCircle2,
+                            iconColor: doneStatus?.resolvedColor,
+                            iconColorable: doneStatus?.iconColorable ?? true,
+                          },
+                        ]
+                      })(),
+                    },
                     // --- Inbox Section ---
                     {
                       id: "nav:inbox",
                       title: "Inbox",
                       icon: Inbox,
-                      variant: isInboxNavigation(navState) ? "default" as const : "ghost" as const,
+                      variant: (isInboxNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.inbox()),
                       expandable: true,
                       expanded: isExpanded('nav:inbox'),
                       onToggle: () => toggleExpanded('nav:inbox'),
                       items: [
                         {
-                          id: "nav:inbox:all",
-                          title: "All Messages",
-                          variant: (isInboxNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.inbox({ filter: 'all' })),
-                          icon: Inbox,
-                        },
-                        {
                           id: "nav:inbox:actionable",
                           title: "Actionable",
                           variant: (isInboxNavigation(navState) && navState.filter === 'actionable') ? "default" as const : "ghost" as const,
                           onClick: () => navigate(routes.view.inbox({ filter: 'actionable' })),
                           icon: Star,
-                        },
-                      ],
-                    },
-                    // --- Tasks Section ---
-                    {
-                      id: "nav:tasks",
-                      title: "Tasks",
-                      icon: ListTodo,
-                      variant: isTasksNavigation(navState) ? "default" as const : "ghost" as const,
-                      onClick: () => navigate(routes.view.tasks()),
-                      expandable: true,
-                      expanded: isExpanded('nav:tasks'),
-                      onToggle: () => toggleExpanded('nav:tasks'),
-                      items: [
-                        {
-                          id: "nav:tasks:todo",
-                          title: "Todo",
-                          variant: (isTasksNavigation(navState) && navState.filter === 'todo') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.tasks({ filter: 'todo' })),
-                          icon: Circle,
-                        },
-                        {
-                          id: "nav:tasks:in-progress",
-                          title: "In Progress",
-                          variant: (isTasksNavigation(navState) && navState.filter === 'in_progress') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.tasks({ filter: 'in_progress' })),
-                          icon: Clock,
-                        },
-                        {
-                          id: "nav:tasks:done",
-                          title: "Done",
-                          variant: (isTasksNavigation(navState) && navState.filter === 'done') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.tasks({ filter: 'done' })),
-                          icon: CheckCircle2,
                         },
                       ],
                     },
@@ -2414,32 +2444,6 @@ function AppShellContent({
                       icon: CalendarDays,
                       variant: isCalendarNavigation(navState) ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.calendar()),
-                      expandable: true,
-                      expanded: isExpanded('nav:calendar'),
-                      onToggle: () => toggleExpanded('nav:calendar'),
-                      items: [
-                        {
-                          id: "nav:calendar:day",
-                          title: "Day",
-                          variant: (isCalendarNavigation(navState) && navState.view === 'day') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.calendar({ view: 'day' })),
-                          icon: CalendarDays,
-                        },
-                        {
-                          id: "nav:calendar:week",
-                          title: "Week",
-                          variant: (isCalendarNavigation(navState) && navState.view === 'week') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.calendar({ view: 'week' })),
-                          icon: CalendarDays,
-                        },
-                        {
-                          id: "nav:calendar:month",
-                          title: "Month",
-                          variant: (isCalendarNavigation(navState) && navState.view === 'month') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.calendar({ view: 'month' })),
-                          icon: CalendarDays,
-                        },
-                      ],
                     },
                     // --- Separator ---
                     { id: "separator:chats-sources", type: "separator" },
@@ -3255,6 +3259,33 @@ function AppShellContent({
                 onDeleteAutomation={handleDeleteAutomation}
                 selectedAutomationId={isAutomationsNavigation(navState) && navState.details ? navState.details.automationId : null}
                 workspaceRootPath={activeWorkspace?.rootPath}
+              />
+            )}
+            {isTasksNavigation(navState) && (
+              /* Tasks List */
+              <TasksListPanel
+                tasks={inboxTasks}
+                filter={navState.filter}
+                selectedTaskId={navState.details?.taskId ?? null}
+                onTaskClick={(task) => navigate(routes.view.tasks({ taskId: task.id }))}
+                sessionStatuses={effectiveSessionStatuses}
+              />
+            )}
+            {isInboxNavigation(navState) && (
+              /* Inbox Messages List */
+              <InboxListPanel
+                messages={inboxMessages}
+                filter={navState.filter}
+                selectedMessageId={navState.details?.messageId ?? null}
+                onMessageClick={(message) => navigate(routes.view.inbox({ messageId: message.id }))}
+              />
+            )}
+            {isCalendarNavigation(navState) && (
+              /* Calendar Events List */
+              <CalendarListPanel
+                events={calendarEvents}
+                selectedEventId={navState.details?.eventId ?? null}
+                onEventClick={(event) => navigate(routes.view.calendar({ eventId: event.id }))}
               />
             )}
             {isSettingsNavigation(navState) && (

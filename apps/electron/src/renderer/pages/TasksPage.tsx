@@ -1,28 +1,23 @@
 import * as React from 'react'
-import { useCallback, useState } from 'react'
-import { useAtomValue, useSetAtom } from 'jotai'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { PanelHeader } from '@/components/app-shell/PanelHeader'
-import { TaskList } from '@/components/tasks/TaskList'
+import { useCallback } from 'react'
+import { ListTodo } from 'lucide-react'
 import { TaskDetail } from '@/components/tasks/TaskDetail'
-import { AddTaskDialog } from '@/components/tasks/AddTaskDialog'
-import { useTasks } from '@/hooks/useTasks'
 import { useInbox } from '@/hooks/useInbox'
-import { selectedTaskIdAtom } from '@/atoms/task-atoms'
+import { useTasks } from '@/hooks/useTasks'
 import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
-import type { Task, TaskState } from '@craft-agent/core/types'
+import { useNavigationState, isTasksNavigation } from '@/contexts/NavigationContext'
+import { navigate, routes } from '@/lib/navigate'
+import type { TaskState } from '@craft-agent/core/types'
 
 export default function TasksPage() {
   const activeWorkspace = useActiveWorkspace()
   const workspaceId = activeWorkspace?.id ?? null
-  const { tasks, isLoading, createTask, updateTask, deleteTask, startSession } = useTasks(workspaceId)
+  const { tasks, updateTask, deleteTask, startSession } = useTasks(workspaceId)
   const { messages } = useInbox(workspaceId)
   const { openNewChat } = useAppShellContext()
+  const navState = useNavigationState()
 
-  const selectedId = useAtomValue(selectedTaskIdAtom)
-  const setSelectedId = useSetAtom(selectedTaskIdAtom)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const selectedId = isTasksNavigation(navState) ? navState.details?.taskId ?? null : null
 
   const selectedTask = React.useMemo(
     () => tasks.find(t => t.id === selectedId) ?? null,
@@ -34,18 +29,9 @@ export default function TasksPage() {
     return messages.find(m => m.id === selectedTask.inboxMessageId) ?? null
   }, [selectedTask, messages])
 
-  const handleSelect = useCallback((taskId: string) => {
-    setSelectedId(taskId)
-  }, [setSelectedId])
-
   const handleBack = useCallback(() => {
-    setSelectedId(null)
-  }, [setSelectedId])
-
-  const handleAdd = useCallback(async (task: Task) => {
-    await createTask(task)
-    setShowAddForm(false)
-  }, [createTask])
+    navigate(routes.view.tasks())
+  }, [])
 
   const handleStartSession = useCallback(async () => {
     if (!selectedTask || !openNewChat) return
@@ -75,8 +61,8 @@ export default function TasksPage() {
   const handleDelete = useCallback(async () => {
     if (!selectedTask) return
     await deleteTask(selectedTask.id)
-    setSelectedId(null)
-  }, [selectedTask, deleteTask, setSelectedId])
+    navigate(routes.view.tasks())
+  }, [selectedTask, deleteTask])
 
   if (selectedTask) {
     return (
@@ -91,41 +77,11 @@ export default function TasksPage() {
     )
   }
 
+  // Empty state — no task selected
   return (
-    <div className="flex flex-col h-full">
-      <PanelHeader
-        title="Tasks"
-        actions={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAddForm(true)}
-            className="gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Task
-          </Button>
-        }
-      />
-
-      {showAddForm && (
-        <AddTaskDialog
-          onAdd={handleAdd}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
-
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center text-sm text-foreground/40">
-          Loading tasks...
-        </div>
-      ) : (
-        <TaskList
-          tasks={tasks}
-          selectedTaskId={selectedId}
-          onSelect={handleSelect}
-        />
-      )}
+    <div className="flex-1 flex flex-col items-center justify-center text-foreground/40 gap-3">
+      <ListTodo className="h-10 w-10" />
+      <p className="text-sm">Select a task to view details</p>
     </div>
   )
 }

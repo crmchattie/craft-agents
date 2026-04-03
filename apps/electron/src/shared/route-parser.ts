@@ -35,7 +35,7 @@ export interface ParsedRoute {
 // Compound Route Types (new format)
 // =============================================================================
 
-export type NavigatorType = 'sessions' | 'sources' | 'skills' | 'automations' | 'settings'
+export type NavigatorType = 'sessions' | 'sources' | 'skills' | 'automations' | 'settings' | 'inbox' | 'tasks' | 'calendar'
 
 export interface ParsedCompoundRoute {
   /** The navigator type */
@@ -46,6 +46,12 @@ export interface ParsedCompoundRoute {
   sourceFilter?: SourceFilter
   /** Automation filter (only for automations navigator) */
   automationFilter?: AutomationFilter
+  /** Inbox filter (only for inbox navigator): 'all' | 'actionable' */
+  inboxFilter?: string
+  /** Task filter (only for tasks navigator): 'all' | 'todo' | 'in_progress' | 'done' | 'cancelled' */
+  taskFilter?: string
+  /** Calendar view (only for calendar navigator): 'day' | 'week' | 'month' */
+  calendarView?: string
   /** Details page info (null for empty state) */
   details: {
     type: string
@@ -61,7 +67,8 @@ export interface ParsedCompoundRoute {
  * Known prefixes that indicate a compound route
  */
 const COMPOUND_ROUTE_PREFIXES = [
-  'allSessions', 'flagged', 'archived', 'state', 'label', 'view', 'sources', 'skills', 'automations', 'settings'
+  'allSessions', 'flagged', 'archived', 'state', 'label', 'view', 'sources', 'skills', 'automations', 'settings',
+  'inbox', 'tasks', 'calendar',
 ]
 
 /**
@@ -193,6 +200,37 @@ export function parseCompoundRoute(route: string): ParsedCompoundRoute | null {
     return null
   }
 
+  // Inbox navigator: inbox, inbox/actionable, inbox/message/{id}, inbox/actionable/message/{id}
+  if (first === 'inbox') {
+    const filter = (segments[1] && segments[1] !== 'message') ? segments[1] : 'all'
+    const msgIdx = segments.indexOf('message')
+    if (msgIdx >= 0 && segments[msgIdx + 1]) {
+      return { navigator: 'inbox', inboxFilter: filter, details: { type: 'message', id: segments[msgIdx + 1] } }
+    }
+    return { navigator: 'inbox', inboxFilter: filter, details: null }
+  }
+
+  // Tasks navigator: tasks, tasks/todo, tasks/task/{id}, tasks/todo/task/{id}
+  if (first === 'tasks') {
+    const filter = (segments[1] && segments[1] !== 'task') ? segments[1] : 'all'
+    const taskIdx = segments.indexOf('task')
+    if (taskIdx >= 0 && segments[taskIdx + 1]) {
+      return { navigator: 'tasks', taskFilter: filter, details: { type: 'task', id: segments[taskIdx + 1] } }
+    }
+    return { navigator: 'tasks', taskFilter: filter, details: null }
+  }
+
+  // Calendar navigator: calendar, calendar/day, calendar/event/{id}, calendar/day/event/{id}
+  if (first === 'calendar') {
+    const validViews = ['day', 'week', 'month']
+    const view = (segments[1] && validViews.includes(segments[1])) ? segments[1] : 'week'
+    const evtIdx = segments.indexOf('event')
+    if (evtIdx >= 0 && segments[evtIdx + 1]) {
+      return { navigator: 'calendar', calendarView: view, details: { type: 'event', id: segments[evtIdx + 1] } }
+    }
+    return { navigator: 'calendar', calendarView: view, details: null }
+  }
+
   // Sessions navigator (allSessions, flagged, state)
   let sessionFilter: SessionFilter
   let detailsStartIndex: number
@@ -283,6 +321,27 @@ export function buildCompoundRoute(parsed: ParsedCompoundRoute): string {
     }
     if (!parsed.details) return base
     return `${base}/automation/${parsed.details.id}`
+  }
+
+  if (parsed.navigator === 'inbox') {
+    let base = 'inbox'
+    if (parsed.inboxFilter && parsed.inboxFilter !== 'all') base = `inbox/${parsed.inboxFilter}`
+    if (!parsed.details) return base
+    return `${base}/message/${parsed.details.id}`
+  }
+
+  if (parsed.navigator === 'tasks') {
+    let base = 'tasks'
+    if (parsed.taskFilter && parsed.taskFilter !== 'all') base = `tasks/${parsed.taskFilter}`
+    if (!parsed.details) return base
+    return `${base}/task/${parsed.details.id}`
+  }
+
+  if (parsed.navigator === 'calendar') {
+    let base = 'calendar'
+    if (parsed.calendarView && parsed.calendarView !== 'week') base = `calendar/${parsed.calendarView}`
+    if (!parsed.details) return base
+    return `${base}/event/${parsed.details.id}`
   }
 
   // Sessions navigator
@@ -406,6 +465,21 @@ function convertCompoundToViewRoute(compound: ParsedCompoundRoute): ParsedRoute 
       return { type: 'view', name: 'automations', params: {} }
     }
     return { type: 'view', name: 'automation-info', id: compound.details.id, params: {} }
+  }
+
+  // Inbox
+  if (compound.navigator === 'inbox') {
+    return { type: 'view', name: 'inbox', params: {} }
+  }
+
+  // Tasks
+  if (compound.navigator === 'tasks') {
+    return { type: 'view', name: 'tasks', params: {} }
+  }
+
+  // Calendar
+  if (compound.navigator === 'calendar') {
+    return { type: 'view', name: 'calendar', params: {} }
   }
 
   // Sessions
@@ -538,6 +612,33 @@ function convertCompoundToNavigationState(compound: ParsedCompoundRoute): Naviga
       navigator: 'automations',
       filter: compound.automationFilter,
       details: { type: 'automation', automationId: compound.details.id },
+    }
+  }
+
+  // Inbox
+  if (compound.navigator === 'inbox') {
+    return {
+      navigator: 'inbox',
+      filter: compound.inboxFilter ?? 'all',
+      details: compound.details ? { type: 'message', messageId: compound.details.id } : null,
+    }
+  }
+
+  // Tasks
+  if (compound.navigator === 'tasks') {
+    return {
+      navigator: 'tasks',
+      filter: (compound.taskFilter ?? 'all') as any,
+      details: compound.details ? { type: 'task', taskId: compound.details.id } : null,
+    }
+  }
+
+  // Calendar
+  if (compound.navigator === 'calendar') {
+    return {
+      navigator: 'calendar',
+      view: (compound.calendarView ?? 'week') as 'day' | 'week' | 'month',
+      details: compound.details ? { type: 'event', eventId: compound.details.id } : null,
     }
   }
 
@@ -720,6 +821,30 @@ function navigationStateToCompoundRoute(state: NavigationState): ParsedCompoundR
       navigator: 'automations',
       automationFilter: state.filter ?? undefined,
       details: state.details ? { type: 'automation', id: state.details.automationId } : null,
+    }
+  }
+
+  if (state.navigator === 'inbox') {
+    return {
+      navigator: 'inbox',
+      inboxFilter: state.filter !== 'all' ? state.filter : undefined,
+      details: state.details ? { type: 'message', id: state.details.messageId } : null,
+    }
+  }
+
+  if (state.navigator === 'tasks') {
+    return {
+      navigator: 'tasks',
+      taskFilter: state.filter !== 'all' ? state.filter : undefined,
+      details: state.details ? { type: 'task', id: state.details.taskId } : null,
+    }
+  }
+
+  if (state.navigator === 'calendar') {
+    return {
+      navigator: 'calendar',
+      calendarView: state.view !== 'week' ? state.view : undefined,
+      details: state.details ? { type: 'event', id: state.details.eventId } : null,
     }
   }
 
