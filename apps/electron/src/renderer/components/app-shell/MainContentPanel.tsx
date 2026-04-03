@@ -30,6 +30,9 @@ import {
   isSettingsNavigation,
   isSkillsNavigation,
   isAutomationsNavigation,
+  isInboxNavigation,
+  isTasksNavigation,
+  isCalendarNavigation,
 } from '@/contexts/NavigationContext'
 import { useSessionSelection, useIsMultiSelectActive, useSelectedIds, useSelectionCount } from '@/hooks/useSession'
 import { sourceSelection, skillSelection } from '@/hooks/useEntitySelection'
@@ -41,6 +44,9 @@ import { getSettingsPageComponent } from '@/pages/settings/settings-pages'
 import { AutomationInfoPage } from '../automations/AutomationInfoPage'
 import type { ExecutionEntry } from '../automations/types'
 import { automationsAtom } from '@/atoms/automations'
+import InboxPage from '@/pages/InboxPage'
+import TasksPage from '@/pages/TasksPage'
+import CalendarPage from '@/pages/CalendarPage'
 
 export interface MainContentPanelProps {
   /** Whether both sidebar and navigator are hidden (focus mode / CMD+.) */
@@ -296,6 +302,33 @@ export function MainContentPanel({
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <p className="text-sm">No automations configured</p>
         </div>
+      </Panel>
+    )
+  }
+
+  // Inbox navigator
+  if (isInboxNavigation(navState)) {
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <InboxPage />
+      </Panel>
+    )
+  }
+
+  // Tasks navigator
+  if (isTasksNavigation(navState)) {
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <TasksPage />
+      </Panel>
+    )
+  }
+
+  // Calendar navigator
+  if (isCalendarNavigation(navState)) {
+    return wrapWithStoplight(
+      <Panel variant="grow" className={className}>
+        <CalendarPage />
       </Panel>
     )
   }

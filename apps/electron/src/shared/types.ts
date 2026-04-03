@@ -723,6 +723,25 @@ export interface AutomationsNavigationState {
   rightSidebar?: RightSidebarPanel
 }
 
+export interface InboxNavigationState {
+  navigator: 'inbox'
+  filter: 'all' | 'actionable' | string
+  details: { type: 'message'; messageId: string } | null
+}
+
+export interface TasksNavigationState {
+  navigator: 'tasks'
+  filter: 'all' | 'todo' | 'in_progress' | 'done' | 'cancelled'
+  details: { type: 'task'; taskId: string } | null
+}
+
+export interface CalendarNavigationState {
+  navigator: 'calendar'
+  view: 'day' | 'week' | 'month'
+  date?: string
+  details: { type: 'event'; eventId: string } | null
+}
+
 /**
  * Unified navigation state
  */
@@ -732,6 +751,9 @@ export type NavigationState =
   | SettingsNavigationState
   | SkillsNavigationState
   | AutomationsNavigationState
+  | InboxNavigationState
+  | TasksNavigationState
+  | CalendarNavigationState
 
 export const isSessionsNavigation = (
   state: NavigationState
@@ -752,6 +774,18 @@ export const isSkillsNavigation = (
 export const isAutomationsNavigation = (
   state: NavigationState
 ): state is AutomationsNavigationState => state.navigator === 'automations'
+
+export const isInboxNavigation = (
+  state: NavigationState
+): state is InboxNavigationState => state.navigator === 'inbox'
+
+export const isTasksNavigation = (
+  state: NavigationState
+): state is TasksNavigationState => state.navigator === 'tasks'
+
+export const isCalendarNavigation = (
+  state: NavigationState
+): state is CalendarNavigationState => state.navigator === 'calendar'
 
 export const DEFAULT_NAVIGATION_STATE: NavigationState = {
   navigator: 'sessions',

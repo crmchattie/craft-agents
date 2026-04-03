@@ -182,6 +182,24 @@ export const routes = {
       subpage
         ? `settings/${subpage}` as const
         : 'settings' as const,
+
+    /** Inbox view (inbox navigator) */
+    inbox: (params?: { filter?: string; messageId?: string }) => {
+      const base = params?.filter ? `inbox/${params.filter}` : 'inbox'
+      return params?.messageId ? `${base}/message/${params.messageId}` as const : base as string
+    },
+
+    /** Tasks view (tasks navigator) */
+    tasks: (params?: { filter?: string; taskId?: string }) => {
+      const base = params?.filter ? `tasks/${params.filter}` : 'tasks'
+      return params?.taskId ? `${base}/task/${params.taskId}` as const : base as string
+    },
+
+    /** Calendar view (calendar navigator) */
+    calendar: (params?: { view?: string; eventId?: string }) => {
+      const base = params?.view ? `calendar/${params.view}` : 'calendar'
+      return params?.eventId ? `${base}/event/${params.eventId}` as const : base as string
+    },
   },
 } as const
 

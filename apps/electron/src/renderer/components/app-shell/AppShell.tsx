@@ -24,12 +24,16 @@ import {
   FolderOpen,
   Cake,
   Calendar,
+  CalendarDays,
   Layers,
   ListTodo,
   Clock,
   Radio,
   Bot,
   Info,
+  Star,
+  Circle,
+  CheckCircle2,
 } from "lucide-react"
 // SessionStatusIcons no longer used - icons come from dynamic sessionStatuses
 import { SourceAvatar } from "@/components/ui/source-avatar"
@@ -110,6 +114,9 @@ import {
   isSettingsNavigation,
   isSkillsNavigation,
   isAutomationsNavigation,
+  isInboxNavigation,
+  isTasksNavigation,
+  isCalendarNavigation,
   type NavigationState,
 } from "@/contexts/NavigationContext"
 import type { SettingsSubpage } from "../../../shared/types"
@@ -2336,6 +2343,103 @@ function AppShellContent({
                         onAddLabel: handleAddLabel,
                       },
                       items: buildLabelSidebarItems(labelTree),
+                    },
+                    // --- Separator ---
+                    { id: "separator:chats-inbox", type: "separator" },
+                    // --- Inbox Section ---
+                    {
+                      id: "nav:inbox",
+                      title: "Inbox",
+                      icon: Inbox,
+                      variant: isInboxNavigation(navState) ? "default" as const : "ghost" as const,
+                      onClick: () => navigate(routes.view.inbox()),
+                      expandable: true,
+                      expanded: isExpanded('nav:inbox'),
+                      onToggle: () => toggleExpanded('nav:inbox'),
+                      items: [
+                        {
+                          id: "nav:inbox:all",
+                          title: "All Messages",
+                          variant: (isInboxNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.inbox({ filter: 'all' })),
+                          icon: Inbox,
+                        },
+                        {
+                          id: "nav:inbox:actionable",
+                          title: "Actionable",
+                          variant: (isInboxNavigation(navState) && navState.filter === 'actionable') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.inbox({ filter: 'actionable' })),
+                          icon: Star,
+                        },
+                      ],
+                    },
+                    // --- Tasks Section ---
+                    {
+                      id: "nav:tasks",
+                      title: "Tasks",
+                      icon: ListTodo,
+                      variant: isTasksNavigation(navState) ? "default" as const : "ghost" as const,
+                      onClick: () => navigate(routes.view.tasks()),
+                      expandable: true,
+                      expanded: isExpanded('nav:tasks'),
+                      onToggle: () => toggleExpanded('nav:tasks'),
+                      items: [
+                        {
+                          id: "nav:tasks:todo",
+                          title: "Todo",
+                          variant: (isTasksNavigation(navState) && navState.filter === 'todo') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.tasks({ filter: 'todo' })),
+                          icon: Circle,
+                        },
+                        {
+                          id: "nav:tasks:in-progress",
+                          title: "In Progress",
+                          variant: (isTasksNavigation(navState) && navState.filter === 'in_progress') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.tasks({ filter: 'in_progress' })),
+                          icon: Clock,
+                        },
+                        {
+                          id: "nav:tasks:done",
+                          title: "Done",
+                          variant: (isTasksNavigation(navState) && navState.filter === 'done') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.tasks({ filter: 'done' })),
+                          icon: CheckCircle2,
+                        },
+                      ],
+                    },
+                    // --- Calendar Section ---
+                    {
+                      id: "nav:calendar",
+                      title: "Calendar",
+                      icon: CalendarDays,
+                      variant: isCalendarNavigation(navState) ? "default" as const : "ghost" as const,
+                      onClick: () => navigate(routes.view.calendar()),
+                      expandable: true,
+                      expanded: isExpanded('nav:calendar'),
+                      onToggle: () => toggleExpanded('nav:calendar'),
+                      items: [
+                        {
+                          id: "nav:calendar:day",
+                          title: "Day",
+                          variant: (isCalendarNavigation(navState) && navState.view === 'day') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.calendar({ view: 'day' })),
+                          icon: CalendarDays,
+                        },
+                        {
+                          id: "nav:calendar:week",
+                          title: "Week",
+                          variant: (isCalendarNavigation(navState) && navState.view === 'week') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.calendar({ view: 'week' })),
+                          icon: CalendarDays,
+                        },
+                        {
+                          id: "nav:calendar:month",
+                          title: "Month",
+                          variant: (isCalendarNavigation(navState) && navState.view === 'month') ? "default" as const : "ghost" as const,
+                          onClick: () => navigate(routes.view.calendar({ view: 'month' })),
+                          icon: CalendarDays,
+                        },
+                      ],
                     },
                     // --- Separator ---
                     { id: "separator:chats-sources", type: "separator" },
