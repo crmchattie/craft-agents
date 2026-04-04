@@ -11,9 +11,11 @@ import { loadInboxConfig, type InboxConfig, type InboxSourceConfig } from './con
 import {
   readMessages,
   appendMessages,
-  replaceEvents,
+  mergeEvents,
   readSyncState,
   writeSyncState,
+  pruneOldMessages,
+  pruneOldEvents,
   type SyncState,
   type SyncCursor,
 } from './storage.ts';
@@ -31,6 +33,9 @@ export interface InboxSyncServiceOptions {
   eventBus: EventBus;
   mcpPool: McpClientPool;
   triageService?: TriageService;
+  /** Called before each sync to ensure the pool has the right source connections.
+   *  The caller should load inbox-configured sources and call pool.sync(). */
+  syncPool?: () => Promise<void>;
 }
 
 export interface SyncResult {
@@ -49,6 +54,7 @@ export class InboxSyncService {
   private readonly eventBus: EventBus;
   private readonly mcpPool: McpClientPool;
   private readonly triageService?: TriageService;
+  private readonly syncPool?: () => Promise<void>;
   private lastSyncTime = 0;
   private syncing = false;
 
@@ -58,6 +64,7 @@ export class InboxSyncService {
     this.eventBus = options.eventBus;
     this.mcpPool = options.mcpPool;
     this.triageService = options.triageService;
+    this.syncPool = options.syncPool;
   }
 
   /**
@@ -84,6 +91,15 @@ export class InboxSyncService {
 
     this.syncing = true;
     try {
+      // Ensure pool has the right source connections before fetching
+      if (this.syncPool) {
+        try {
+          await this.syncPool();
+        } catch (error) {
+          log.error('Failed to sync inbox pool:', error);
+        }
+      }
+
       const result = await this.runSync(config);
       this.lastSyncTime = Date.now();
 
@@ -94,6 +110,19 @@ export class InboxSyncService {
           log.debug(`Triage complete: ${triageResult.messagesTriaged} messages, ${triageResult.eventsTriaged} events, ${triageResult.tasksCreated} tasks`);
         } catch (error) {
           log.error('Post-sync triage failed:', error);
+        }
+      }
+
+      // Retention cleanup — prune data older than configured days
+      if (config.retentionDays > 0) {
+        try {
+          const prunedMsgs = pruneOldMessages(this.workspaceRootPath, config.retentionDays);
+          const prunedEvts = pruneOldEvents(this.workspaceRootPath, config.retentionDays);
+          if (prunedMsgs > 0 || prunedEvts > 0) {
+            log.debug(`Retention cleanup: pruned ${prunedMsgs} messages, ${prunedEvts} events (older than ${config.retentionDays} days)`);
+          }
+        } catch (error) {
+          log.error('Retention cleanup failed:', error);
         }
       }
 
@@ -147,13 +176,33 @@ export class InboxSyncService {
     return { newMessageCount: totalNewMessages, newEventCount: totalNewEvents, errors };
   }
 
+  /**
+   * Resolve the MCP proxy tool name for a source.
+   * For MCP sources, uses the configured fetchToolName directly.
+   * For API sources, the tool is always named `api_{sourceSlug}`.
+   */
+  private resolveProxyName(source: InboxSourceConfig): string {
+    const configured = `mcp__${source.sourceSlug}__${source.fetchToolName}`;
+    // Check if the configured tool exists in the pool
+    if (this.mcpPool.hasProxyTool(configured)) {
+      return configured;
+    }
+    // Fall back to API tool naming convention (api_{slug})
+    const apiName = `mcp__${source.sourceSlug}__api_${source.sourceSlug}`;
+    if (this.mcpPool.hasProxyTool(apiName)) {
+      return apiName;
+    }
+    // Return configured name — callTool will report the error
+    return configured;
+  }
+
   private async syncMessageSource(
     source: InboxSourceConfig,
     syncState: SyncState,
     existingIds: Set<string>,
   ): Promise<number> {
     const cursor = syncState.cursors[source.sourceSlug];
-    const proxyName = `mcp__${source.sourceSlug}__${source.fetchToolName}`;
+    const proxyName = this.resolveProxyName(source);
     const args = this.buildFetchArgs(source, cursor);
 
     log.debug(`Fetching messages from ${source.sourceSlug} via ${proxyName}`);
@@ -196,7 +245,7 @@ export class InboxSyncService {
   ): Promise<number> {
     const now = new Date();
     const lookaheadEnd = new Date(now.getTime() + config.calendarLookaheadHours * 3600_000);
-    const proxyName = `mcp__${source.sourceSlug}__${source.fetchToolName}`;
+    const proxyName = this.resolveProxyName(source);
     const args = {
       ...source.fetchToolArgs,
       startTime: now.toISOString(),
@@ -211,7 +260,7 @@ export class InboxSyncService {
     }
 
     const events = this.normalizeEvents(result, source);
-    replaceEvents(this.workspaceRootPath, events);
+    mergeEvents(this.workspaceRootPath, events);
 
     if (events.length > 0) {
       await this.eventBus.emit('CalendarEventsPrepared', {

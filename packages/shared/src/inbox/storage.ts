@@ -121,6 +121,56 @@ export function replaceEvents(workspaceRootPath: string, events: CalendarEvent[]
   writeJsonlFile(getEventsPath(workspaceRootPath), events);
 }
 
+/**
+ * Merge new calendar events with existing ones.
+ * - Existing events with the same ID get updated (times, attendees may change)
+ * - New events (unknown ID) get appended
+ * - Past events that aren't in the new set are preserved (not deleted)
+ */
+export function mergeEvents(workspaceRootPath: string, newEvents: CalendarEvent[]): void {
+  const existing = readEvents(workspaceRootPath);
+  const existingById = new Map(existing.map(e => [e.id, e]));
+
+  // Update existing + add new
+  for (const evt of newEvents) {
+    existingById.set(evt.id, evt);
+  }
+
+  writeJsonlFile(getEventsPath(workspaceRootPath), Array.from(existingById.values()));
+}
+
+// ============================================================================
+// Retention cleanup
+// ============================================================================
+
+/**
+ * Remove messages older than `maxAgeDays`. Returns count of pruned messages.
+ */
+export function pruneOldMessages(workspaceRootPath: string, maxAgeDays: number): number {
+  const messages = readMessages(workspaceRootPath);
+  const cutoff = Date.now() - maxAgeDays * 86_400_000;
+  const kept = messages.filter(m => new Date(m.receivedAt).getTime() >= cutoff);
+  const pruned = messages.length - kept.length;
+  if (pruned > 0) {
+    writeJsonlFile(getMessagesPath(workspaceRootPath), kept);
+  }
+  return pruned;
+}
+
+/**
+ * Remove calendar events that ended more than `maxAgeDays` ago. Returns count of pruned events.
+ */
+export function pruneOldEvents(workspaceRootPath: string, maxAgeDays: number): number {
+  const events = readEvents(workspaceRootPath);
+  const cutoff = Date.now() - maxAgeDays * 86_400_000;
+  const kept = events.filter(e => new Date(e.endTime).getTime() >= cutoff);
+  const pruned = events.length - kept.length;
+  if (pruned > 0) {
+    writeJsonlFile(getEventsPath(workspaceRootPath), kept);
+  }
+  return pruned;
+}
+
 // ============================================================================
 // Tasks
 // ============================================================================

@@ -31,6 +31,8 @@ export interface InboxConfig {
   calendarLookaheadHours: number;
   /** LLM connection slug to use for triage. Empty = workspace default. */
   triageConnection: string;
+  /** Days to retain messages and events. 0 = no cleanup. */
+  retentionDays: number;
   sources: InboxSourceConfig[];
 }
 
@@ -47,6 +49,7 @@ export const DEFAULT_INBOX_CONFIG: InboxConfig = {
   triageCalendar: true,
   calendarLookaheadHours: 24,
   triageConnection: '',
+  retentionDays: 30,
   sources: [],
 };
 

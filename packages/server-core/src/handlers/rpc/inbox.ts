@@ -82,8 +82,10 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.inbox.SYNC, async (_ctx, workspaceId: string) => {
-    if (!deps.inboxSyncHandler) throw new Error('Inbox sync not configured')
-    return deps.inboxSyncHandler.triggerManualSync()
+    const workspace = resolveWorkspace(workspaceId)
+    const handler = deps.sessionManager.getInboxSyncHandler(workspace.rootPath)
+    if (!handler) throw new Error('Inbox sync not initialized for this workspace')
+    return handler.triggerManualSync()
   })
 
   server.handle(RPC_CHANNELS.inbox.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {
@@ -193,8 +195,10 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.calendar.SYNC, async (_ctx, workspaceId: string) => {
-    if (!deps.inboxSyncHandler) throw new Error('Calendar sync not configured')
-    return deps.inboxSyncHandler.triggerManualSync()
+    const workspace = resolveWorkspace(workspaceId)
+    const handler = deps.sessionManager.getInboxSyncHandler(workspace.rootPath)
+    if (!handler) throw new Error('Calendar sync not initialized for this workspace')
+    return handler.triggerManualSync()
   })
 
   server.handle(RPC_CHANNELS.calendar.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {

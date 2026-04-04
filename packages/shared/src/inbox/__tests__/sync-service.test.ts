@@ -13,6 +13,7 @@ function makeMockPool(responses: Record<string, { content: string; isError: bool
     callTool: jest.fn(async (proxyName: string, _args: Record<string, unknown>) => {
       return responses[proxyName] ?? { content: '[]', isError: false };
     }),
+    hasProxyTool: (name: string) => name in responses,
   } as any;
 }
 
@@ -231,6 +232,7 @@ describe('InboxSyncService', () => {
       callTool: jest.fn(() => new Promise<any>((resolve) => {
         resolveCall = () => resolve({ content: '[]', isError: false });
       })),
+      hasProxyTool: () => true,
     } as any;
 
     const service = createService(pool);
@@ -297,5 +299,200 @@ describe('InboxSyncService', () => {
     await service.sync(true);
 
     expect(triageAll).not.toHaveBeenCalled();
+  });
+
+  describe('resolveProxyName', () => {
+    it('uses configured tool name when it exists in pool', async () => {
+      writeConfig([
+        { sourceSlug: 'slack', sourceType: 'slack', enabled: true, fetchToolName: 'list_messages' },
+      ]);
+
+      const pool = makeMockPool({
+        'mcp__slack__list_messages': { content: '[]', isError: false },
+      });
+
+      const service = createService(pool);
+      await service.sync(true);
+
+      expect(pool.callTool).toHaveBeenCalledWith(
+        'mcp__slack__list_messages',
+        expect.any(Object),
+      );
+    });
+
+    it('falls back to api_{slug} naming for API sources', async () => {
+      writeConfig([
+        { sourceSlug: 'gmail', sourceType: 'email', enabled: true, fetchToolName: 'list_messages' },
+      ]);
+
+      // Pool only has the API-style tool name
+      const pool = makeMockPool({
+        'mcp__gmail__api_gmail': { content: '[]', isError: false },
+      });
+
+      const service = createService(pool);
+      await service.sync(true);
+
+      expect(pool.callTool).toHaveBeenCalledWith(
+        'mcp__gmail__api_gmail',
+        expect.any(Object),
+      );
+    });
+
+    it('uses configured name when neither exists (error deferred to callTool)', async () => {
+      writeConfig([
+        { sourceSlug: 'custom', sourceType: 'email', enabled: true, fetchToolName: 'fetch_mail' },
+      ]);
+
+      // Pool has no matching tools at all
+      const pool = makeMockPool({});
+      // callTool will return error for unknown tool
+      pool.callTool = jest.fn(async () => ({ content: 'Unknown tool', isError: true }));
+
+      const service = createService(pool);
+      const result = await service.sync(true);
+
+      expect(pool.callTool).toHaveBeenCalledWith(
+        'mcp__custom__fetch_mail',
+        expect.any(Object),
+      );
+      expect(result.errors).toHaveLength(1);
+    });
+  });
+
+  describe('syncPool callback', () => {
+    it('calls syncPool before each sync', async () => {
+      writeConfig([
+        { sourceSlug: 'slack', sourceType: 'slack', enabled: true, fetchToolName: 'list_messages' },
+      ]);
+
+      const pool = makeMockPool({
+        'mcp__slack__list_messages': { content: '[]', isError: false },
+      });
+      const syncPool = jest.fn(async () => {});
+
+      const service = new InboxSyncService({
+        workspaceRootPath: TEST_DIR,
+        workspaceId: 'test-workspace',
+        eventBus,
+        mcpPool: pool,
+        syncPool,
+      });
+
+      await service.sync(true);
+      expect(syncPool).toHaveBeenCalledTimes(1);
+    });
+
+    it('continues sync even if syncPool throws', async () => {
+      writeConfig([
+        { sourceSlug: 'slack', sourceType: 'slack', enabled: true, fetchToolName: 'list_messages' },
+      ]);
+
+      const pool = makeMockPool({
+        'mcp__slack__list_messages': { content: '[]', isError: false },
+      });
+      const syncPool = jest.fn(async () => { throw new Error('pool sync failed'); });
+
+      const service = new InboxSyncService({
+        workspaceRootPath: TEST_DIR,
+        workspaceId: 'test-workspace',
+        eventBus,
+        mcpPool: pool,
+        syncPool,
+      });
+
+      const result = await service.sync(true);
+      // Sync should proceed despite syncPool error
+      expect(result.errors).toHaveLength(0);
+      expect(pool.callTool).toHaveBeenCalled();
+    });
+  });
+
+  describe('retention cleanup', () => {
+    it('prunes old data when retentionDays > 0', async () => {
+      const oldDate = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      const { appendMessages } = await import('../storage.ts');
+      appendMessages(TEST_DIR, [{
+        id: 'old-msg', sourceSlug: 'slack', sourceType: 'slack' as const,
+        externalId: 'old-msg', from: { name: 'Alice' }, body: 'old',
+        receivedAt: oldDate, isRead: false,
+      }]);
+
+      writeFileSync(
+        getInboxConfigPath(TEST_DIR),
+        JSON.stringify({
+          backgroundSyncEnabled: true,
+          syncIntervalMinutes: 1,
+          retentionDays: 30,
+          sources: [],
+        }),
+      );
+
+      const pool = makeMockPool();
+      const service = createService(pool);
+      await service.sync(true);
+
+      const { readMessages } = await import('../storage.ts');
+      expect(readMessages(TEST_DIR)).toHaveLength(0);
+    });
+
+    it('skips cleanup when retentionDays is 0', async () => {
+      const oldDate = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      const { appendMessages } = await import('../storage.ts');
+      appendMessages(TEST_DIR, [{
+        id: 'old-msg', sourceSlug: 'slack', sourceType: 'slack' as const,
+        externalId: 'old-msg', from: { name: 'Alice' }, body: 'old',
+        receivedAt: oldDate, isRead: false,
+      }]);
+
+      writeFileSync(
+        getInboxConfigPath(TEST_DIR),
+        JSON.stringify({
+          backgroundSyncEnabled: true,
+          syncIntervalMinutes: 1,
+          retentionDays: 0,
+          sources: [],
+        }),
+      );
+
+      const pool = makeMockPool();
+      const service = createService(pool);
+      await service.sync(true);
+
+      const { readMessages } = await import('../storage.ts');
+      expect(readMessages(TEST_DIR)).toHaveLength(1);
+    });
+  });
+
+  describe('calendar merge behavior', () => {
+    it('preserves existing events when syncing new ones', async () => {
+      const { replaceEvents, readEvents } = await import('../storage.ts');
+      replaceEvents(TEST_DIR, [{
+        id: 'past-event', sourceSlug: 'gcal', externalId: 'past-event',
+        title: 'Yesterday Meeting', startTime: '2026-04-01T09:00:00Z',
+        endTime: '2026-04-01T10:00:00Z', allDay: false, calendarName: 'Work',
+      }]);
+
+      writeConfig([
+        { sourceSlug: 'gcal', sourceType: 'calendar', enabled: true, fetchToolName: 'list_events' },
+      ]);
+
+      const pool = makeMockPool({
+        'mcp__gcal__list_events': {
+          content: JSON.stringify([
+            { id: 'new-event', title: 'Today Meeting', start: '2026-04-02T09:00:00Z', end: '2026-04-02T10:00:00Z' },
+          ]),
+          isError: false,
+        },
+      });
+
+      const service = createService(pool);
+      await service.sync(true);
+
+      const events = readEvents(TEST_DIR);
+      expect(events).toHaveLength(2);
+      expect(events.find(e => e.id === 'past-event')).toBeDefined();
+      expect(events.find(e => e.id.includes('new-event'))).toBeDefined();
+    });
   });
 });

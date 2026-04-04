@@ -36,6 +36,7 @@ export interface ISessionManager {
   cleanup(): void
   setEventSink(sink: EventSink): void
   flushAllSessions(): Promise<void>
+  getInboxSyncHandler(workspaceRootPath: string): import('@craft-agent/shared/inbox').InboxSyncHandler | undefined
 
   // ---------------------------------------------------------------------------
   // Session CRUD

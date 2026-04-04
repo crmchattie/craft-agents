@@ -11,6 +11,9 @@ import {
   getMessageById,
   readEvents,
   replaceEvents,
+  mergeEvents,
+  pruneOldMessages,
+  pruneOldEvents,
   readTasks,
   writeTasks,
   createTask,
@@ -183,6 +186,138 @@ describe('inbox storage', () => {
 
     it('returns false when deleting nonexistent task', () => {
       expect(deleteTask(TEST_DIR, 'nope')).toBe(false);
+    });
+  });
+
+  describe('mergeEvents', () => {
+    it('creates file with new events when no existing data', () => {
+      mergeEvents(TEST_DIR, [makeEvent('e1'), makeEvent('e2')]);
+      expect(readEvents(TEST_DIR)).toHaveLength(2);
+    });
+
+    it('preserves existing events when new array is empty', () => {
+      replaceEvents(TEST_DIR, [makeEvent('e1'), makeEvent('e2')]);
+      mergeEvents(TEST_DIR, []);
+      expect(readEvents(TEST_DIR)).toHaveLength(2);
+    });
+
+    it('updates existing events by ID', () => {
+      replaceEvents(TEST_DIR, [makeEvent('e1', { title: 'Old Title' })]);
+      mergeEvents(TEST_DIR, [makeEvent('e1', { title: 'New Title' })]);
+      const events = readEvents(TEST_DIR);
+      expect(events).toHaveLength(1);
+      expect(events[0]!.title).toBe('New Title');
+    });
+
+    it('preserves old events not in new set', () => {
+      replaceEvents(TEST_DIR, [makeEvent('e1'), makeEvent('e2')]);
+      mergeEvents(TEST_DIR, [makeEvent('e3')]);
+      const events = readEvents(TEST_DIR);
+      expect(events).toHaveLength(3);
+      const ids = events.map(e => e.id).sort();
+      expect(ids).toEqual(['e1', 'e2', 'e3']);
+    });
+
+    it('handles mixed update and add', () => {
+      replaceEvents(TEST_DIR, [makeEvent('e1', { title: 'Original' }), makeEvent('e2')]);
+      mergeEvents(TEST_DIR, [makeEvent('e1', { title: 'Updated' }), makeEvent('e3')]);
+      const events = readEvents(TEST_DIR);
+      expect(events).toHaveLength(3);
+      expect(events.find(e => e.id === 'e1')!.title).toBe('Updated');
+      expect(events.find(e => e.id === 'e2')).toBeDefined();
+      expect(events.find(e => e.id === 'e3')).toBeDefined();
+    });
+  });
+
+  describe('pruneOldMessages', () => {
+    it('returns 0 when no messages exist', () => {
+      expect(pruneOldMessages(TEST_DIR, 30)).toBe(0);
+    });
+
+    it('removes all messages older than threshold', () => {
+      const oldDate = new Date(Date.now() - 60 * 86_400_000).toISOString(); // 60 days ago
+      appendMessages(TEST_DIR, [
+        makeMessage('m1', { receivedAt: oldDate }),
+        makeMessage('m2', { receivedAt: oldDate }),
+      ]);
+      const pruned = pruneOldMessages(TEST_DIR, 30);
+      expect(pruned).toBe(2);
+      expect(readMessages(TEST_DIR)).toHaveLength(0);
+    });
+
+    it('keeps all messages newer than threshold', () => {
+      const recentDate = new Date().toISOString();
+      appendMessages(TEST_DIR, [
+        makeMessage('m1', { receivedAt: recentDate }),
+        makeMessage('m2', { receivedAt: recentDate }),
+      ]);
+      const pruned = pruneOldMessages(TEST_DIR, 30);
+      expect(pruned).toBe(0);
+      expect(readMessages(TEST_DIR)).toHaveLength(2);
+    });
+
+    it('correctly filters mixed ages', () => {
+      const oldDate = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      const recentDate = new Date().toISOString();
+      appendMessages(TEST_DIR, [
+        makeMessage('old', { receivedAt: oldDate }),
+        makeMessage('new', { receivedAt: recentDate }),
+      ]);
+      const pruned = pruneOldMessages(TEST_DIR, 30);
+      expect(pruned).toBe(1);
+      const remaining = readMessages(TEST_DIR);
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0]!.id).toBe('new');
+    });
+
+    it('keeps message just inside cutoff boundary', () => {
+      // 29 days ago — just inside the 30-day window
+      const justInside = new Date(Date.now() - 29 * 86_400_000).toISOString();
+      appendMessages(TEST_DIR, [makeMessage('m1', { receivedAt: justInside })]);
+      const pruned = pruneOldMessages(TEST_DIR, 30);
+      expect(pruned).toBe(0);
+      expect(readMessages(TEST_DIR)).toHaveLength(1);
+    });
+  });
+
+  describe('pruneOldEvents', () => {
+    it('returns 0 when no events exist', () => {
+      expect(pruneOldEvents(TEST_DIR, 30)).toBe(0);
+    });
+
+    it('removes events that ended before threshold', () => {
+      const oldEnd = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      replaceEvents(TEST_DIR, [
+        makeEvent('e1', { endTime: oldEnd }),
+        makeEvent('e2', { endTime: oldEnd }),
+      ]);
+      const pruned = pruneOldEvents(TEST_DIR, 30);
+      expect(pruned).toBe(2);
+      expect(readEvents(TEST_DIR)).toHaveLength(0);
+    });
+
+    it('keeps events that ended after threshold', () => {
+      const recentEnd = new Date().toISOString();
+      replaceEvents(TEST_DIR, [makeEvent('e1', { endTime: recentEnd })]);
+      expect(pruneOldEvents(TEST_DIR, 30)).toBe(0);
+      expect(readEvents(TEST_DIR)).toHaveLength(1);
+    });
+
+    it('prunes by endTime not startTime', () => {
+      const recentStart = new Date().toISOString();
+      const oldEnd = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      replaceEvents(TEST_DIR, [
+        makeEvent('e1', { startTime: recentStart, endTime: oldEnd }),
+      ]);
+      // Event has recent startTime but old endTime — should be pruned
+      expect(pruneOldEvents(TEST_DIR, 30)).toBe(1);
+    });
+
+    it('keeps event just inside cutoff boundary', () => {
+      const justInside = new Date(Date.now() - 29 * 86_400_000).toISOString();
+      replaceEvents(TEST_DIR, [makeEvent('e1', { endTime: justInside })]);
+      expect(pruneOldEvents(TEST_DIR, 30)).toBe(0);
+      expect(readEvents(TEST_DIR)).toHaveLength(1);
     });
   });
 

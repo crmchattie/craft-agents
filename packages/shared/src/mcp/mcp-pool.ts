@@ -362,6 +362,13 @@ export class McpClientPool {
   // ============================================================
 
   /**
+   * Check if a proxy tool name is registered in the pool.
+   */
+  hasProxyTool(proxyName: string): boolean {
+    return this.proxyTools.has(proxyName);
+  }
+
+  /**
    * Execute an MCP tool by its proxy name (mcp__{slug}__{toolName}).
    * Returns a result matching the subprocess protocol format.
    */

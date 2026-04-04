@@ -77,6 +77,7 @@ import { toolMetadataStore, getLastApiError } from '@craft-agent/shared/intercep
 import { isParentTaskTool } from '@craft-agent/shared/utils/toolNames'
 import { getCredentialManager } from '@craft-agent/shared/credentials'
 import { CraftMcpClient, McpClientPool, McpPoolServer } from '@craft-agent/shared/mcp'
+import { InboxSyncService, InboxSyncHandler } from '@craft-agent/shared/inbox'
 import { type Session, type SessionEvent, type FileAttachment, type SendMessageOptions, type UnreadSummary, type RemoteSessionTransferPayload, type ImportRemoteSessionTransferResult, RPC_CHANNELS, generateMessageId } from '@craft-agent/shared/protocol'
 import { messageToStored, storedToMessage, type Message, type StoredAttachment, type ToolDisplayMeta } from '@craft-agent/core/types'
 import { formatPathsToRelative, formatToolInputPaths, perf, encodeIconToDataUrlAsync, getEmojiIcon, resetSummarizationClient, resolveToolIcon, readFileAttachment, selectSpreadMessages, normalizePath } from '@craft-agent/shared/utils'
@@ -1059,6 +1060,9 @@ export class SessionManager implements ISessionManager {
   private initGate = new InitGate()
   // O(1) index: taskId → sessionId for background task output lookup (avoids O(n) session scan)
   private taskOutputIndex: Map<string, string> = new Map()
+  // Inbox sync handlers per workspace (for background polling + manual refresh)
+  private inboxSyncHandlers: Map<string, InboxSyncHandler> = new Map()
+  private inboxPools: Map<string, McpClientPool> = new Map()
   /** Monotonic clock to ensure strictly increasing message timestamps */
   private lastTimestamp = 0
 
@@ -1066,6 +1070,11 @@ export class SessionManager implements ISessionManager {
    *  Resolves immediately if already initialized. */
   waitForInit(): Promise<void> {
     return this.initGate.wait()
+  }
+
+  /** Get the inbox sync handler for a workspace (for RPC manual refresh). */
+  getInboxSyncHandler(workspaceRootPath: string): InboxSyncHandler | undefined {
+    return this.inboxSyncHandlers.get(workspaceRootPath)
   }
 
   private browserPaneManager: IBrowserPaneManager | null = null
@@ -1404,6 +1413,46 @@ export class SessionManager implements ISessionManager {
       })
       this.automationSystems.set(workspaceRootPath, automationSystem)
       sessionLog.info(`Initialized AutomationSystem for workspace ${workspaceId}`)
+
+      // Initialize inbox sync pipeline (background polling for email/calendar sources)
+      if (!this.inboxSyncHandlers.has(workspaceRootPath)) {
+        try {
+          const inboxPool = new McpClientPool({ workspaceRootPath })
+          this.inboxPools.set(workspaceRootPath, inboxPool)
+
+          const syncService = new InboxSyncService({
+            workspaceRootPath,
+            workspaceId,
+            eventBus: automationSystem.eventBus,
+            mcpPool: inboxPool,
+            syncPool: async () => {
+              // Load inbox-configured source slugs and sync the pool with their connections
+              const { loadInboxConfig } = await import('@craft-agent/shared/inbox')
+              const inboxConfig = loadInboxConfig(workspaceRootPath)
+              const slugs = inboxConfig.sources.filter(s => s.enabled).map(s => s.sourceSlug)
+              if (slugs.length === 0) return
+
+              const sources = getSourcesBySlugs(workspaceRootPath, slugs).filter(isSourceUsable)
+              if (sources.length === 0) return
+
+              const { mcpServers, apiServers } = await buildServersFromSources(sources)
+              // Wrap raw McpServer instances into ApiServerConfig format for pool.sync()
+              const wrappedApiServers: Record<string, { type: 'sdk'; instance: any }> = {}
+              for (const [slug, instance] of Object.entries(apiServers)) {
+                wrappedApiServers[slug] = { type: 'sdk', instance }
+              }
+              await inboxPool.sync(mcpServers, wrappedApiServers)
+            },
+          })
+
+          const syncHandler = new InboxSyncHandler(syncService, automationSystem.eventBus)
+          syncHandler.start()
+          this.inboxSyncHandlers.set(workspaceRootPath, syncHandler)
+          sessionLog.info(`Initialized InboxSyncHandler for workspace ${workspaceId}`)
+        } catch (error) {
+          sessionLog.error(`Failed to initialize inbox sync for workspace ${workspaceId}:`, error)
+        }
+      }
     }
   }
 
