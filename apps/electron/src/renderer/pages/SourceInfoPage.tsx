@@ -28,7 +28,7 @@ import {
   type ToolRow,
 } from '@/components/info'
 import type { LoadedSource, McpToolWithPermission } from '../../shared/types'
-import { detectCapabilities, discoverCapabilitiesFromTools } from '@craft-agent/shared/inbox'
+import { detectCapabilities, discoverCapabilitiesFromTools } from '@craft-agent/shared/inbox/provider-registry'
 import type { PermissionsConfigFile } from '@craft-agent/shared/agent/modes'
 
 interface SourceInfoPageProps {

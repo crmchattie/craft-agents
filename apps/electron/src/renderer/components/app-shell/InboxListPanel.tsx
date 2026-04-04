@@ -27,6 +27,8 @@ export interface InboxListPanelProps {
   selectedMessageId?: string | null
   onMessageClick: (message: InboxMessage) => void
   onRefresh?: () => void
+  onAddSource?: () => void
+  hasConfiguredSources?: boolean
   className?: string
 }
 
@@ -36,6 +38,8 @@ export function InboxListPanel({
   selectedMessageId,
   onMessageClick,
   onRefresh,
+  onAddSource,
+  hasConfiguredSources,
   className,
 }: InboxListPanelProps) {
   const filteredMessages = React.useMemo(() => {
@@ -58,9 +62,17 @@ export function InboxListPanel({
         <EntityListEmptyScreen
           icon={<Mail />}
           title={filter === 'actionable' ? 'No actionable messages.' : 'No messages yet.'}
-          description="Connect an inbox source and hit refresh to pull in messages."
+          description="Add an inbox source to start pulling in messages."
         >
-          {onRefresh && (
+          {onAddSource && (
+            <button
+              onClick={onAddSource}
+              className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
+            >
+              Add Inbox
+            </button>
+          )}
+          {hasConfiguredSources && onRefresh && (
             <button
               onClick={onRefresh}
               className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"

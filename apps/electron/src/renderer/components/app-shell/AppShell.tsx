@@ -1748,7 +1748,7 @@ function AppShellContent({
   // We use controlled popovers instead of deep links so the user can type
   // their request in the popover UI before opening a new chat window.
   // add-source variants: add-source (generic), add-source-api, add-source-mcp, add-source-local
-  const [editPopoverOpen, setEditPopoverOpen] = useState<'statuses' | 'labels' | 'views' | 'add-source' | 'add-source-api' | 'add-source-mcp' | 'add-source-local' | 'add-skill' | 'add-label' | 'automation-config' | null>(null)
+  const [editPopoverOpen, setEditPopoverOpen] = useState<'statuses' | 'labels' | 'views' | 'add-source' | 'add-source-api' | 'add-source-mcp' | 'add-source-local' | 'add-source-inbox' | 'add-source-calendar' | 'add-skill' | 'add-label' | 'automation-config' | null>(null)
 
   // Stores the Y position of the last right-clicked sidebar item so the EditPopover
   // appears near it rather than at a fixed location. Updated synchronously before
@@ -1851,6 +1851,17 @@ function AppShellContent({
     captureContextMenuPosition()
     const key = sourceType ? `add-source-${sourceType}` as const : 'add-source' as const
     setTimeout(() => setEditPopoverOpen(key), 50)
+  }, [captureContextMenuPosition])
+
+  // Inbox/Calendar empty-state handlers — open EditPopover with contextual prompts
+  const openAddInbox = useCallback(() => {
+    captureContextMenuPosition()
+    setTimeout(() => setEditPopoverOpen('add-source-inbox'), 50)
+  }, [captureContextMenuPosition])
+
+  const openAddCalendar = useCallback(() => {
+    captureContextMenuPosition()
+    setTimeout(() => setEditPopoverOpen('add-source-calendar'), 50)
   }, [captureContextMenuPosition])
 
   // Handler for "Add Skill" context menu action
@@ -2361,7 +2372,7 @@ function AppShellContent({
                       items: buildLabelSidebarItems(labelTree),
                     },
                     // --- Separator ---
-                    { id: "separator:chats-inbox", type: "separator" },
+                    { id: "separator:sessions-inbox", type: "separator" },
                     // --- Inbox Section ---
                     {
                       id: "nav:inbox",
@@ -2391,7 +2402,7 @@ function AppShellContent({
                       onClick: () => navigate(routes.view.calendar()),
                     },
                     // --- Separator ---
-                    { id: "separator:chats-sources", type: "separator" },
+                    { id: "separator:inbox-sources", type: "separator" },
                     // --- Sources & Skills Section ---
                     {
                       id: "nav:sources",
@@ -3153,6 +3164,36 @@ function AppShellContent({
                       {...getEditConfig('add-skill', activeWorkspace.rootPath)}
                     />
                   )}
+                  {/* Inbox actions: refresh + add source */}
+                  {isInboxNavigation(navState) && (
+                    <>
+                      <HeaderIconButton
+                        icon={<RotateCw className="h-4 w-4" />}
+                        tooltip="Refresh Inbox"
+                        onClick={refreshInbox}
+                      />
+                      <HeaderIconButton
+                        icon={<Plus className="h-4 w-4" />}
+                        tooltip="Add Inbox Source"
+                        onClick={openAddInbox}
+                      />
+                    </>
+                  )}
+                  {/* Calendar actions: refresh + add source */}
+                  {isCalendarNavigation(navState) && (
+                    <>
+                      <HeaderIconButton
+                        icon={<RotateCw className="h-4 w-4" />}
+                        tooltip="Refresh Calendar"
+                        onClick={refreshCalendar}
+                      />
+                      <HeaderIconButton
+                        icon={<Plus className="h-4 w-4" />}
+                        tooltip="Add Calendar Source"
+                        onClick={openAddCalendar}
+                      />
+                    </>
+                  )}
                   {/* Add Automation button (only for automations mode) */}
                   {isAutomationsNavigation(navState) && activeWorkspace && (
                     <EditPopover
@@ -3214,6 +3255,8 @@ function AppShellContent({
                 selectedMessageId={navState.details?.messageId ?? null}
                 onMessageClick={(message) => navigate(routes.view.inbox({ messageId: message.id }))}
                 onRefresh={refreshInbox}
+                onAddSource={openAddInbox}
+                hasConfiguredSources={sources.length > 0}
               />
             )}
             {isCalendarNavigation(navState) && (
@@ -3223,6 +3266,8 @@ function AppShellContent({
                 selectedEventId={navState.details?.eventId ?? null}
                 onEventClick={(event) => navigate(routes.view.calendar({ eventId: event.id }))}
                 onRefresh={refreshCalendar}
+                onAddSource={openAddCalendar}
+                hasConfiguredSources={sources.length > 0}
               />
             )}
             {isSettingsNavigation(navState) && (
@@ -3458,7 +3503,7 @@ function AppShellContent({
           {/* Add Source EditPopovers - one for each variant (generic + filter-specific)
            * editPopoverOpen can be: 'add-source', 'add-source-api', 'add-source-mcp', 'add-source-local'
            * Each variant uses its corresponding EditContextKey for filter-aware agent context */}
-          {(['add-source', 'add-source-api', 'add-source-mcp', 'add-source-local'] as const).map((variant) => (
+          {(['add-source', 'add-source-api', 'add-source-mcp', 'add-source-local', 'add-source-inbox', 'add-source-calendar'] as const).map((variant) => (
             <EditPopover
               key={variant}
               open={editPopoverOpen === variant}

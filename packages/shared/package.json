@@ -26,6 +26,7 @@
     "./config/types": "./src/config/types.ts",
     "./credentials": "./src/credentials/index.ts",
     "./inbox": "./src/inbox/index.ts",
+    "./inbox/provider-registry": "./src/inbox/provider-registry.ts",
     "./mcp": "./src/mcp/index.ts",
     "./prompts": "./src/prompts/index.ts",
     "./sessions": "./src/sessions/index.ts",

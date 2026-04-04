@@ -77,6 +77,8 @@ export type EditContextKey =
   | 'add-source-api'   // Filter-specific: user is viewing APIs
   | 'add-source-mcp'   // Filter-specific: user is viewing MCPs
   | 'add-source-local' // Filter-specific: user is viewing Local Folders
+  | 'add-source-inbox'    // Inbox empty state: user wants to connect an inbox source
+  | 'add-source-calendar' // Calendar empty state: user wants to connect a calendar source
   | 'add-skill'
   | 'edit-statuses'
   | 'edit-labels'
@@ -339,6 +341,36 @@ const EDIT_CONFIGS: Record<EditContextKey, (location: string) => EditConfig> = {
     },
     example: 'Connect to my Obsidian vault',
     overridePlaceholder: 'What folder would you like to connect?',
+  }),
+
+  'add-source-inbox': (location) => ({
+    context: {
+      label: 'Add Inbox',
+      filePath: `${location}/sources/`,
+      context:
+        'The user wants to connect an inbox source so they can receive messages (email or Slack). ' +
+        'Common providers: Gmail (Google), Outlook (Microsoft), Slack. ' +
+        'Ask which service they want to connect, then create the source folder and config.json. ' +
+        'Follow the patterns in ~/.craft-agent/docs/sources.md. ' +
+        'After creating the source, call source_test with the source slug to verify the configuration.',
+    },
+    example: 'Connect my Gmail',
+    overridePlaceholder: 'What inbox would you like to connect?',
+  }),
+
+  'add-source-calendar': (location) => ({
+    context: {
+      label: 'Add Calendar',
+      filePath: `${location}/sources/`,
+      context:
+        'The user wants to connect a calendar source so they can see upcoming events. ' +
+        'Common providers: Google Calendar, Microsoft Outlook Calendar. ' +
+        'Ask which calendar service they want to connect, then create the source folder and config.json. ' +
+        'Follow the patterns in ~/.craft-agent/docs/sources.md. ' +
+        'After creating the source, call source_test with the source slug to verify the configuration.',
+    },
+    example: 'Connect my Google Calendar',
+    overridePlaceholder: 'What calendar would you like to connect?',
   }),
 
   'add-skill': (location) => ({

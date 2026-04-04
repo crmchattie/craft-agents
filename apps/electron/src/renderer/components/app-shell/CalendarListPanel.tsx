@@ -12,6 +12,8 @@ export interface CalendarListPanelProps {
   selectedEventId?: string | null
   onEventClick: (event: CalendarEvent) => void
   onRefresh?: () => void
+  onAddSource?: () => void
+  hasConfiguredSources?: boolean
   className?: string
 }
 
@@ -20,6 +22,8 @@ export function CalendarListPanel({
   selectedEventId,
   onEventClick,
   onRefresh,
+  onAddSource,
+  hasConfiguredSources,
   className,
 }: CalendarListPanelProps) {
   const sortedEvents = React.useMemo(() => {
@@ -38,9 +42,17 @@ export function CalendarListPanel({
         <EntityListEmptyScreen
           icon={<Calendar />}
           title="No events."
-          description="Connect a calendar source and hit refresh to pull in events."
+          description="Add a calendar source to start pulling in events."
         >
-          {onRefresh && (
+          {onAddSource && (
+            <button
+              onClick={onAddSource}
+              className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
+            >
+              Add Calendar
+            </button>
+          )}
+          {hasConfiguredSources && onRefresh && (
             <button
               onClick={onRefresh}
               className="inline-flex items-center h-7 px-3 text-xs font-medium rounded-[8px] bg-background shadow-minimal hover:bg-foreground/[0.03] transition-colors"
