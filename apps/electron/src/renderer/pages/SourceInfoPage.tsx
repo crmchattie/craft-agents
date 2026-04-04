@@ -7,7 +7,8 @@
 
 import * as React from 'react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Inbox, CalendarDays, MessageSquare } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { EditPopover, EditButton, getEditConfig } from '@/components/ui/EditPopover'
 import { SourceAvatar } from '@/components/ui/source-avatar'
 import { SourceMenu } from '@/components/app-shell/SourceMenu'
@@ -27,6 +28,7 @@ import {
   type ToolRow,
 } from '@/components/info'
 import type { LoadedSource, McpToolWithPermission } from '../../shared/types'
+import { detectCapabilities, discoverCapabilitiesFromTools } from '@craft-agent/shared/inbox'
 import type { PermissionsConfigFile } from '@craft-agent/shared/agent/modes'
 
 interface SourceInfoPageProps {
@@ -177,7 +179,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
   const [mcpToolsLoading, setMcpToolsLoading] = useState(false)
   const [mcpToolsError, setMcpToolsError] = useState<string | null>(null)
   const [localMcpEnabled, setLocalMcpEnabled] = useState(true)
-
+  const [inboxConfig, setInboxConfig] = useState<{ sources: Array<{ sourceSlug: string; sourceType: string; enabled: boolean; fetchToolName: string }> } | null>(null)
 
   // Load source data
   useEffect(() => {
@@ -265,6 +267,62 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
       console.error('[SourceInfoPage] Failed to load workspace settings:', err)
     })
   }, [workspaceId])
+
+  // Load inbox config to show sync status
+  useEffect(() => {
+    if (!workspaceId || !window.electronAPI?.getInboxConfig) return
+    window.electronAPI.getInboxConfig(workspaceId).then((config: any) => {
+      if (config) setInboxConfig(config)
+    }).catch(() => {})
+  }, [workspaceId, source])
+
+  // Compute inbox/calendar sync entries for this source
+  const syncEntries = useMemo(() => {
+    if (!inboxConfig || !source) return []
+    return inboxConfig.sources.filter(s => s.sourceSlug === source.config.slug)
+  }, [inboxConfig, source])
+
+  // Detect capabilities from provider registry (for showing available but unwired capabilities)
+  const availableCapabilities = useMemo(() => {
+    if (!source) return []
+    let caps = detectCapabilities(source.config)
+    // If no registry match but we have MCP tools, try introspection
+    if (caps.length === 0 && mcpTools && mcpTools.length > 0) {
+      caps = discoverCapabilitiesFromTools(mcpTools.map(t => t.name))
+    }
+    return caps
+  }, [source, mcpTools])
+
+  const handleToggleSync = useCallback(async (sourceType: string, fetchToolName: string, enabled: boolean) => {
+    if (!workspaceId || !source || !window.electronAPI?.getInboxConfig || !window.electronAPI?.updateInboxConfig) return
+    try {
+      const config = await window.electronAPI.getInboxConfig(workspaceId)
+      if (!config) return
+
+      if (enabled) {
+        // Add entry
+        const exists = config.sources.some((s: any) => s.sourceSlug === source.config.slug && s.sourceType === sourceType)
+        if (!exists) {
+          config.sources.push({
+            sourceSlug: source.config.slug,
+            sourceType,
+            enabled: true,
+            fetchToolName,
+          })
+        }
+      } else {
+        // Remove entry
+        config.sources = config.sources.filter(
+          (s: any) => !(s.sourceSlug === source.config.slug && s.sourceType === sourceType)
+        )
+      }
+
+      await window.electronAPI.updateInboxConfig(workspaceId, config)
+      setInboxConfig({ ...config, sources: [...config.sources] })
+    } catch (err) {
+      console.error('[SourceInfoPage] Failed to toggle sync:', err)
+    }
+  }, [workspaceId, source])
 
   // Listen for source folder changes
   useEffect(() => {
@@ -434,6 +492,58 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
               <Info_Table.Row label="Last Tested" value={formatRelativeTime(source.config.lastTestedAt)} />
             </Info_Table>
           </Info_Section>
+
+          {/* Inbox & Calendar sync */}
+          {(syncEntries.length > 0 || availableCapabilities.length > 0) && (
+            <Info_Section
+              title="Inbox & Calendar"
+              description="Sync data from this source to your Inbox or Calendar."
+            >
+              <Info_Table>
+                {/* Show each capability as a toggle row */}
+                {availableCapabilities.map((cap: any) => {
+                  const isWired = syncEntries.some(e => e.sourceType === cap.inboxSourceType)
+                  const Icon = cap.inboxSourceType === 'calendar' ? CalendarDays
+                    : cap.inboxSourceType === 'slack' ? MessageSquare
+                    : Inbox
+                  return (
+                    <Info_Table.Row key={cap.inboxSourceType} label={cap.displayName}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5 text-foreground/40" />
+                        <span className="text-sm text-foreground/60">
+                          {isWired ? 'Syncing' : 'Available'}
+                        </span>
+                        <Switch
+                          checked={isWired}
+                          onCheckedChange={(checked) => handleToggleSync(cap.inboxSourceType, cap.fetchToolName, checked)}
+                          className="ml-auto"
+                        />
+                      </div>
+                    </Info_Table.Row>
+                  )
+                })}
+                {/* Show wired entries that aren't in capabilities (manually configured) */}
+                {syncEntries.filter(e => !availableCapabilities.some((c: any) => c.inboxSourceType === e.sourceType)).map(entry => {
+                  const Icon = entry.sourceType === 'calendar' ? CalendarDays
+                    : entry.sourceType === 'slack' ? MessageSquare
+                    : Inbox
+                  return (
+                    <Info_Table.Row key={entry.sourceType} label={entry.fetchToolName}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5 text-foreground/40" />
+                        <span className="text-sm text-foreground/60">Syncing</span>
+                        <Switch
+                          checked={true}
+                          onCheckedChange={() => handleToggleSync(entry.sourceType, entry.fetchToolName, false)}
+                          className="ml-auto"
+                        />
+                      </div>
+                    </Info_Table.Row>
+                  )
+                })}
+              </Info_Table>
+            </Info_Section>
+          )}
 
           {/* Permissions - for API and local sources */}
           {source.config.type !== 'mcp' && permissionsConfig && apiPermissionsData.length > 0 && (

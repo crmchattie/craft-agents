@@ -36,7 +36,7 @@ export function registerSourcesHandlers(server: RpcServer, deps: HandlerDeps): v
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
     const { createSource } = await import('@craft-agent/shared/sources')
-    return createSource(workspace.rootPath, {
+    const result = await createSource(workspace.rootPath, {
       name: config.name || 'New Source',
       provider: config.provider || 'custom',
       type: config.type || 'mcp',
@@ -45,6 +45,21 @@ export function registerSourcesHandlers(server: RpcServer, deps: HandlerDeps): v
       api: config.api,
       local: config.local,
     })
+
+    // Auto-wire to inbox/calendar for sources that don't need OAuth (e.g., no-auth MCP).
+    // OAuth sources (API type with oauth auth) are wired after auth completes in oauth.ts.
+    const needsOAuth = result.type === 'api' && result.api?.authType === 'oauth'
+    if (!needsOAuth) {
+      try {
+        const { detectCapabilities, autoWireSource } = await import('@craft-agent/shared/inbox')
+        const capabilities = detectCapabilities(result)
+        if (capabilities.length > 0) {
+          autoWireSource(workspace.rootPath, result.slug, capabilities)
+        }
+      } catch { /* non-critical */ }
+    }
+
+    return result
   })
 
   // Delete a source
@@ -53,6 +68,12 @@ export function registerSourcesHandlers(server: RpcServer, deps: HandlerDeps): v
     if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`)
     const { deleteSource } = await import('@craft-agent/shared/sources')
     deleteSource(workspace.rootPath, sourceSlug)
+
+    // Clean up inbox/calendar sync entries for this source
+    try {
+      const { unwireSource } = await import('@craft-agent/shared/inbox')
+      unwireSource(workspace.rootPath, sourceSlug)
+    } catch { /* non-critical */ }
 
     // Clean up stale slug from workspace default sources
     const { loadWorkspaceConfig, saveWorkspaceConfig } = await import('@craft-agent/shared/workspaces')

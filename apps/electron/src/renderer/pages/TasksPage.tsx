@@ -40,7 +40,6 @@ export default function TasksPage() {
       await openNewChat({
         input: sessionInfo.prompt,
         name: sessionInfo.name,
-        taskId: selectedTask.id,
         sessionOptions: {
           enabledSourceSlugs: sessionInfo.sources,
         },

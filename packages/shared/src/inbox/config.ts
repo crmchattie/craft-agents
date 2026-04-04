@@ -66,14 +66,14 @@ export function loadInboxConfig(workspaceRootPath: string): InboxConfig {
   const configPath = getInboxConfigPath(workspaceRootPath);
   if (!existsSync(configPath)) {
     log.debug('No inbox-config.json found, using defaults');
-    return { ...DEFAULT_INBOX_CONFIG };
+    return { ...DEFAULT_INBOX_CONFIG, sources: [] };
   }
   try {
     const raw = readJsonFileSync<Partial<InboxConfig>>(configPath);
-    return { ...DEFAULT_INBOX_CONFIG, ...raw };
+    return { ...DEFAULT_INBOX_CONFIG, ...raw, sources: [...(raw.sources ?? [])] };
   } catch (error) {
     log.error('Failed to load inbox-config.json, using defaults:', error);
-    return { ...DEFAULT_INBOX_CONFIG };
+    return { ...DEFAULT_INBOX_CONFIG, sources: [] };
   }
 }
 

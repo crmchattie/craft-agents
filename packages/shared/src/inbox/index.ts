@@ -50,3 +50,14 @@ export { InboxSyncHandler } from './sync-handler.ts';
 // Triage service
 export type { TriageServiceOptions, TriageResult } from './triage-service.ts';
 export { TriageService } from './triage-service.ts';
+
+// Provider registry & auto-wire
+export type { InboxCapability } from './provider-registry.ts';
+export {
+  PROVIDER_REGISTRY,
+  detectCapabilities,
+  discoverCapabilitiesFromTools,
+  buildInboxSourceConfig,
+} from './provider-registry.ts';
+export type { AutoWireResult } from './auto-wire.ts';
+export { autoWireSource, unwireSource } from './auto-wire.ts';

@@ -5,6 +5,7 @@ import { loadSource, loadWorkspaceSources, getSourceCredentialManager } from '@c
 import { createPendingFlow } from '@craft-agent/shared/auth'
 import { pushTyped, type RpcServer } from '@craft-agent/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
+import { detectCapabilities, autoWireSource } from '@craft-agent/shared/inbox'
 
 export const HANDLED_CHANNELS = [
   RPC_CHANNELS.oauth.START,
@@ -141,7 +142,7 @@ export function registerOAuthHandlers(server: RpcServer, deps: HandlerDeps): voi
     if (!flow) throw new Error('Unknown or expired OAuth flow')
     if (flow.flowId !== flowId) throw new Error('Flow ID mismatch')
 
-    return completeOAuthFlow({
+    const result = await completeOAuthFlow({
       code,
       state,
       flowStore,
@@ -156,6 +157,24 @@ export function registerOAuthHandlers(server: RpcServer, deps: HandlerDeps): voi
       clientId: ctx.clientId,
       workspaceId: ctx.workspaceId,
     })
+
+    // Auto-wire source to inbox/calendar if capabilities detected
+    if (result.success && flow.workspaceId) {
+      try {
+        const ws = getWorkspaceByNameOrId(flow.workspaceId)
+        const source = ws ? loadSource(ws.rootPath, flow.sourceSlug) : null
+        if (ws && source) {
+          const capabilities = detectCapabilities(source.config)
+          if (capabilities.length > 0) {
+            autoWireSource(ws.rootPath, source.config.slug, capabilities)
+          }
+        }
+      } catch (err) {
+        log.info(`[OAuth] Auto-wire failed for ${flow.sourceSlug}: ${err}`)
+      }
+    }
+
+    return result
   })
 
   // ── oauth:cancel ─────────────────────────────────────────────
