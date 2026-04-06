@@ -5,7 +5,7 @@ import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
 import { calendarSelection } from '@/hooks/useEntitySelection'
 import type { CalendarEvent } from '@craft-agent/core/types'
-import { format } from 'date-fns'
+import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
 
 export interface CalendarListPanelProps {
   events: CalendarEvent[]
@@ -27,7 +27,7 @@ export function CalendarListPanel({
   className,
 }: CalendarListPanelProps) {
   const sortedEvents = React.useMemo(() => {
-    return [...events].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    return [...events].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
   }, [events])
 
   return (
@@ -65,9 +65,21 @@ export function CalendarListPanel({
       mapItem={(event) => {
         const startDate = new Date(event.startTime)
         const color = event.calendarColor ?? '#3b82f6'
-        const timeLabel = event.allDay
-          ? 'All day'
-          : format(startDate, 'h:mm a')
+
+        // Date prefix: "Today", "Tomorrow", "Mon, Apr 7", etc.
+        let datePrefix: string
+        if (isToday(startDate)) datePrefix = 'Today'
+        else if (isTomorrow(startDate)) datePrefix = 'Tomorrow'
+        else if (isYesterday(startDate)) datePrefix = 'Yesterday'
+        else datePrefix = format(startDate, 'EEE, MMM d')
+
+        // Time label with date context
+        let timeLabel: string
+        if (event.allDay) {
+          timeLabel = `${datePrefix} · All day`
+        } else {
+          timeLabel = `${datePrefix} · ${format(startDate, 'h:mm a')}`
+        }
 
         return {
           icon: (

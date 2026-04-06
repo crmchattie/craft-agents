@@ -20,6 +20,25 @@ interface EventDetailProps {
   onStartSession?: () => void
 }
 
+/** Strip HTML tags and convert common elements to readable plain text. */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<a[^>]+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'muted'> = {
   accepted: 'success',
   tentative: 'warning',
@@ -118,7 +137,9 @@ export function EventDetail({ event, onBack, onStartSession }: EventDetailProps)
           {event.description && (
             <div className="space-y-1">
               <div className="text-xs font-medium text-foreground/50">Description</div>
-              <p className="text-sm text-foreground/70 whitespace-pre-wrap">{event.description}</p>
+              <p className="text-sm text-foreground/70 whitespace-pre-wrap">
+                {event.description.includes('<') ? htmlToPlainText(event.description) : event.description}
+              </p>
             </div>
           )}
 

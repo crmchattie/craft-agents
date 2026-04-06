@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useAtom } from 'jotai'
 import { CalendarHeader } from '@/components/calendar/CalendarHeader'
 import { WeekView } from '@/components/calendar/WeekView'
@@ -9,6 +9,8 @@ import { EventDetail } from '@/components/calendar/EventDetail'
 import { useCalendar } from '@/hooks/useCalendar'
 import { calendarViewAtom, calendarSelectedDateAtom } from '@/atoms/calendar-atoms'
 import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
+import { useNavigationState, isCalendarNavigation } from '@/contexts/NavigationContext'
+import { navigate, routes } from '@/lib/navigate'
 import type { CalendarEvent } from '@craft-agent/core/types'
 
 export default function CalendarPage() {
@@ -16,19 +18,33 @@ export default function CalendarPage() {
   const workspaceId = activeWorkspace?.id ?? null
   const { events, isLoading, isSyncing, refresh } = useCalendar(workspaceId)
   const { openNewChat } = useAppShellContext()
+  const navState = useNavigationState()
 
   const [view] = useAtom(calendarViewAtom)
   const [selectedDate, setSelectedDate] = useAtom(calendarSelectedDateAtom)
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  const date = React.useMemo(() => new Date(selectedDate), [selectedDate])
+  // Selected event from navigation state (list panel click) or calendar view click
+  const selectedEventId = isCalendarNavigation(navState) ? navState.details?.eventId ?? null : null
+  const selectedEvent = React.useMemo(
+    () => events.find(e => e.id === selectedEventId) ?? null,
+    [events, selectedEventId],
+  )
+
+  // Reset to today when calendar page mounts (prevents showing stale date from previous session)
+  React.useEffect(() => {
+    const d = new Date()
+    setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  }, [setSelectedDate])
+
+  // Parse as local midnight (not UTC) — `new Date("2026-04-06")` is UTC which shifts the day in negative-offset timezones
+  const date = React.useMemo(() => new Date(selectedDate + 'T00:00:00'), [selectedDate])
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
-    setSelectedEvent(event)
+    navigate(routes.view.calendar({ eventId: event.id }))
   }, [])
 
   const handleBack = useCallback(() => {
-    setSelectedEvent(null)
+    navigate(routes.view.calendar())
   }, [])
 
   const handleSelectDay = useCallback((day: Date) => {
