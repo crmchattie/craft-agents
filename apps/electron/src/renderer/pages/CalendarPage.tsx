@@ -54,9 +54,13 @@ export default function CalendarPage() {
   }, [setSelectedDate])
 
   const handleStartSession = useCallback(async () => {
-    if (!selectedEvent?.triage?.suggestedPrepPrompt || !openNewChat) return
+    if (!selectedEvent || !openNewChat) return
+    const startDate = new Date(selectedEvent.startTime)
+    const dateStr = startDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    const prompt = selectedEvent.triage?.suggestedPrepPrompt
+      ?? `Help me prepare for this meeting:\n\nTitle: ${selectedEvent.title}\nWhen: ${dateStr}\n${selectedEvent.description ? `Description: ${selectedEvent.description.slice(0, 500)}` : ''}\n${selectedEvent.attendees?.length ? `Attendees: ${selectedEvent.attendees.map(a => a.name || a.email).join(', ')}` : ''}\n\nUse any of your connected sources if they would help provide better context.`
     await openNewChat({
-      input: selectedEvent.triage.suggestedPrepPrompt,
+      input: prompt,
       name: `Prep: ${selectedEvent.title}`,
       calendarEventId: selectedEvent.id,
     })
@@ -67,7 +71,7 @@ export default function CalendarPage() {
       <EventDetail
         event={selectedEvent}
         onBack={handleBack}
-        onStartSession={selectedEvent.triage?.needsPrep ? handleStartSession : undefined}
+        onStartSession={handleStartSession}
       />
     )
   }

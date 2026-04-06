@@ -39,11 +39,17 @@ export function MessageDetail({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </Button>
+        {onStartSession && (
+          <Button size="sm" onClick={onStartSession} className="gap-1.5">
+            <Mail className="h-3 w-3" />
+            Reply with Agent
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1">
@@ -106,13 +112,14 @@ export function MessageDetail({
             </div>
           )}
 
-          {/* Triage card */}
+          {/* Triage card (shown when auto-triage has run) */}
           {message.triage && (
             <TriageCard
               triage={message.triage}
               onStartSession={onStartSession}
             />
           )}
+
         </div>
       </ScrollArea>
     </div>

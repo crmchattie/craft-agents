@@ -58,11 +58,17 @@ export function EventDetail({ event, onBack, onStartSession }: EventDetailProps)
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </Button>
+        {onStartSession && (
+          <Button size="sm" onClick={onStartSession} className="gap-1.5">
+            <Play className="h-3 w-3" />
+            Prep with Agent
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1">
@@ -143,7 +149,7 @@ export function EventDetail({ event, onBack, onStartSession }: EventDetailProps)
             </div>
           )}
 
-          {/* Triage prep */}
+          {/* Triage prep (shown when auto-triage has run) */}
           {event.triage?.needsPrep && (
             <div className="rounded-[8px] border border-border/60 bg-foreground/[0.02] p-4 space-y-2">
               <div className="flex items-center gap-2">
@@ -159,14 +165,9 @@ export function EventDetail({ event, onBack, onStartSession }: EventDetailProps)
                   </p>
                 </div>
               )}
-              {onStartSession && (
-                <Button size="sm" onClick={onStartSession} className="gap-1.5">
-                  <Play className="h-3 w-3" />
-                  Start Session
-                </Button>
-              )}
             </div>
           )}
+
         </div>
       </ScrollArea>
     </div>

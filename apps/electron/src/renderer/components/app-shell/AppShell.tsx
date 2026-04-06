@@ -2379,20 +2379,8 @@ function AppShellContent({
                       title: "Inbox",
                       label: inboxMessages.length > 0 ? String(inboxMessages.length) : undefined,
                       icon: Mail,
-                      variant: (isInboxNavigation(navState) && navState.filter === 'all') ? "default" as const : "ghost" as const,
+                      variant: isInboxNavigation(navState) ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.inbox()),
-                      expandable: true,
-                      expanded: isExpanded('nav:inbox'),
-                      onToggle: () => toggleExpanded('nav:inbox'),
-                      items: [
-                        {
-                          id: "nav:inbox:actionable",
-                          title: "Actionable",
-                          variant: (isInboxNavigation(navState) && navState.filter === 'actionable') ? "default" as const : "ghost" as const,
-                          onClick: () => navigate(routes.view.inbox({ filter: 'actionable' })),
-                          icon: Star,
-                        },
-                      ],
                     },
                     // --- Calendar Section ---
                     {

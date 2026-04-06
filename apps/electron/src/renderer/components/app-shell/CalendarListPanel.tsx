@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Calendar, Bot } from 'lucide-react'
+import { CalendarDays, Bot } from 'lucide-react'
 import { EntityPanel } from '@/components/ui/entity-panel'
 import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
@@ -40,7 +40,7 @@ export function CalendarListPanel({
       className={className}
       emptyState={
         <EntityListEmptyScreen
-          icon={<Calendar />}
+          icon={<CalendarDays />}
           title="No events."
           description="Add a calendar source to start pulling in events."
         >
@@ -83,7 +83,7 @@ export function CalendarListPanel({
 
         return {
           icon: (
-            <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <CalendarDays className="h-3.5 w-3.5" style={{ color }} />
           ),
           title: event.title,
           badges: (

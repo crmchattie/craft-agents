@@ -1420,6 +1420,10 @@ export class SessionManager implements ISessionManager {
           const inboxPool = new McpClientPool({ workspaceRootPath })
           this.inboxPools.set(workspaceRootPath, inboxPool)
 
+          // Triage service is not injected — triage is manual (user clicks "Draft Response" / "Prep with Agent").
+          // To re-enable auto-triage, construct a TriageService here with createAnthropicSimpleLlmCall()
+          // and pass it as triageService to InboxSyncService.
+
           const syncService = new InboxSyncService({
             workspaceRootPath,
             workspaceId,

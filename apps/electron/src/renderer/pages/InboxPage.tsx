@@ -33,10 +33,14 @@ export default function InboxPage() {
   }, [])
 
   const handleStartSession = useCallback(async () => {
-    if (!selectedMessage?.triage?.suggestedPrompt || !openNewChat) return
+    if (!selectedMessage || !openNewChat) return
+    const prompt = selectedMessage.triage?.suggestedPrompt
+      ?? `Help me draft a response to this email:\n\nFrom: ${selectedMessage.from.name}\nSubject: ${selectedMessage.subject ?? '(no subject)'}\n\n${selectedMessage.body.slice(0, 500)}\n\nUse any of your connected sources if they would help provide better context.`
+    const name = selectedMessage.triage?.summary
+      ?? `Re: ${selectedMessage.subject ?? selectedMessage.from.name}`
     await openNewChat({
-      input: selectedMessage.triage.suggestedPrompt,
-      name: selectedMessage.triage.summary,
+      input: prompt,
+      name,
       inboxMessageId: selectedMessage.id,
     })
   }, [selectedMessage, openNewChat])
@@ -52,7 +56,7 @@ export default function InboxPage() {
         message={selectedMessage}
         threadMessages={threadMessages}
         onBack={handleBack}
-        onStartSession={selectedMessage.triage?.isActionable ? handleStartSession : undefined}
+        onStartSession={handleStartSession}
       />
     )
   }
