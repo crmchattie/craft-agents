@@ -596,8 +596,35 @@ export function useOnboarding({
         return
       }
 
-      // Claude OAuth (two-step flow - opens browser, user copies code)
-      // Remaining method must be claude_oauth
+      // Claude OAuth — single-step via CLI auth login
+      // Opens browser, CLI handles callback automatically, stores tokens in keychain.
+      // Enables Anthropic-hosted MCP servers (Gmail, Google Calendar, etc.)
+      if (effectiveMethod === 'claude_oauth') {
+        const effectiveEditingSlug = connectionSlugOverride ?? editingSlug
+        const isReauth = !!effectiveEditingSlug
+        const connectionSlug = apiSetupMethodToConnectionSetup(effectiveMethod, {}, effectiveEditingSlug, existingSlugs).slug
+        const result = await window.electronAPI.claudeCodeAuthLogin()
+
+        if (result.success) {
+          await saveAndValidateConnection(connectionSlug, effectiveMethod, undefined, isReauth)
+        } else {
+          setState(s => ({
+            ...s,
+            credentialStatus: 'error',
+            errorMessage: result.error || 'Claude authentication failed',
+          }))
+        }
+        return
+      }
+
+      // Remaining methods should not reach here
+      setState(s => ({
+        ...s,
+        credentialStatus: 'error',
+        errorMessage: 'This connection uses API keys, not OAuth.',
+      }))
+
+      /* [ROLLBACK] Original two-step Claude OAuth flow (user copies authorization code from browser):
       if (effectiveMethod !== 'claude_oauth') {
         setState(s => ({
           ...s,
@@ -610,7 +637,6 @@ export function useOnboarding({
       const result = await window.electronAPI.startClaudeOAuth()
 
       if (result.success) {
-        // Browser opened successfully, now waiting for user to copy the code
         setIsWaitingForCode(true)
         setState(s => ({ ...s, credentialStatus: 'idle' }))
       } else {
@@ -620,6 +646,7 @@ export function useOnboarding({
           errorMessage: result.error || 'Failed to start OAuth',
         }))
       }
+      */
     } catch (error) {
       setState(s => ({
         ...s,
@@ -660,7 +687,7 @@ export function useOnboarding({
     }
   }, [handleStartOAuth])
 
-  // Submit authorization code (second step of OAuth flow)
+  /* [ROLLBACK] Submit authorization code — no longer needed with CLI auth login.
   const handleSubmitAuthCode = useCallback(async (code: string) => {
     if (!code.trim()) {
       setState(s => ({
@@ -695,6 +722,11 @@ export function useOnboarding({
       }))
     }
   }, [saveAndValidateConnection, editingSlug, existingSlugs])
+  */
+  // Stub for type compatibility — handleSubmitAuthCode is referenced by CredentialsStep
+  const handleSubmitAuthCode = useCallback(async (_code: string) => {
+    // No-op: CLI auth login handles the full flow in a single step
+  }, [])
 
   // Submit local model configuration (Ollama or any OpenAI-compatible local server)
   const handleSubmitLocalModel = useCallback(async (data: LocalModelSubmitData) => {
@@ -726,8 +758,8 @@ export function useOnboarding({
   const handleCancelOAuth = useCallback(async () => {
     setIsWaitingForCode(false)
     setState(s => ({ ...s, credentialStatus: 'idle', errorMessage: undefined }))
-    // Clear OAuth state on backend
-    await window.electronAPI.clearClaudeOAuthState()
+    // [ROLLBACK] Old OAuth state cleanup — not needed with CLI auth login
+    // await window.electronAPI.clearClaudeOAuthState()
   }, [])
 
   // Git Bash handlers (Windows only)

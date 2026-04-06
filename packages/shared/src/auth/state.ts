@@ -11,6 +11,9 @@
  * our native OAuth flow. This is a one-time migration.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { getCredentialManager } from '../credentials/index.ts';
 import {
   loadStoredConfig,
@@ -182,6 +185,24 @@ export async function performTokenRefresh(
 // ============================================
 // Functions
 // ============================================
+
+/**
+ * Check if the user has a valid Claude Code CLI session.
+ *
+ * When true, the SDK subprocess can use its native keychain auth instead of
+ * the app's own OAuth token. This enables Anthropic-hosted MCP servers
+ * (Gmail, Google Calendar, etc.) that are tied to the user's claude.ai account.
+ */
+export function hasClaudeCodeCliAuth(): boolean {
+  try {
+    const configPath = join(homedir(), '.claude.json');
+    const raw = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw);
+    return !!(config.oauthAccount?.accountUuid);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Get and refresh Claude OAuth token if needed

@@ -36,6 +36,8 @@ function resolveWorkspace(workspaceId: string) {
 }
 
 export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): void {
+  const log = deps.platform.logger
+
   // ============================================================================
   // Inbox Messages
   // ============================================================================
@@ -55,6 +57,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
       messages = messages.filter(m => m.triage?.isActionable)
     }
 
+    log.debug(`[inbox-rpc] GET_MESSAGES: ${messages.length} messages returned`)
     return messages
   })
 
@@ -71,6 +74,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.inbox.MARK_READ, async (_ctx, workspaceId: string, messageId: string) => {
+    log.debug(`[inbox-rpc] MARK_READ: messageId=${messageId}`)
     const workspace = resolveWorkspace(workspaceId)
     const { readMessages, rewriteMessages } = await import('@craft-agent/shared/inbox')
     const messages = readMessages(workspace.rootPath)
@@ -82,10 +86,15 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.inbox.SYNC, async (_ctx, workspaceId: string) => {
+    log.info(`[inbox-rpc] Manual inbox sync triggered for workspace ${workspaceId}`)
     const workspace = resolveWorkspace(workspaceId)
     const handler = deps.sessionManager.getInboxSyncHandler(workspace.rootPath)
     if (!handler) throw new Error('Inbox sync not initialized for this workspace')
-    return handler.triggerManualSync()
+    const result = await handler.triggerManualSync()
+    // Notify renderer that inbox data changed
+    pushTyped(server, RPC_CHANNELS.inbox.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
+    pushTyped(server, RPC_CHANNELS.calendar.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
+    return result
   })
 
   server.handle(RPC_CHANNELS.inbox.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {
@@ -101,6 +110,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.inbox.UPDATE_CONFIG, async (_ctx, workspaceId: string, config: import('@craft-agent/shared/inbox').InboxConfig) => {
+    log.info(`[inbox-rpc] Inbox config updated for workspace ${workspaceId}`)
     const workspace = resolveWorkspace(workspaceId)
     const { saveInboxConfig } = await import('@craft-agent/shared/inbox')
     saveInboxConfig(workspace.rootPath, config)
@@ -185,6 +195,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
       events = events.filter(e => e.startTime <= range.end!)
     }
 
+    log.debug(`[inbox-rpc] GET_EVENTS: ${events.length} events returned${range?.start ? ` (range: ${range.start} - ${range.end})` : ''}`)
     return events
   })
 
@@ -195,10 +206,14 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
   })
 
   server.handle(RPC_CHANNELS.calendar.SYNC, async (_ctx, workspaceId: string) => {
+    log.info(`[inbox-rpc] Manual calendar sync triggered for workspace ${workspaceId}`)
     const workspace = resolveWorkspace(workspaceId)
     const handler = deps.sessionManager.getInboxSyncHandler(workspace.rootPath)
     if (!handler) throw new Error('Calendar sync not initialized for this workspace')
-    return handler.triggerManualSync()
+    const result = await handler.triggerManualSync()
+    pushTyped(server, RPC_CHANNELS.inbox.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
+    pushTyped(server, RPC_CHANNELS.calendar.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
+    return result
   })
 
   server.handle(RPC_CHANNELS.calendar.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {

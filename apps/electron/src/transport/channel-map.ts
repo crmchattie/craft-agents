@@ -129,6 +129,8 @@ export const CHANNEL_MAP = {
   exchangeClaudeCode: invoke(RPC_CHANNELS.onboarding.EXCHANGE_CLAUDE_CODE),
   hasClaudeOAuthState: invoke(RPC_CHANNELS.onboarding.HAS_CLAUDE_OAUTH_STATE),
   clearClaudeOAuthState: invoke(RPC_CHANNELS.onboarding.CLEAR_CLAUDE_OAUTH_STATE),
+  claudeCodeAuthLogin: invoke(RPC_CHANNELS.onboarding.CLAUDE_CODE_AUTH_LOGIN),
+  claudeCodeAuthStatus: invoke(RPC_CHANNELS.onboarding.CLAUDE_CODE_AUTH_STATUS),
   deferSetup: invoke(RPC_CHANNELS.onboarding.DEFER_SETUP),
 
   // ChatGPT OAuth

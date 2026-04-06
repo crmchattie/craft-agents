@@ -1427,27 +1427,100 @@ export class SessionManager implements ISessionManager {
             mcpPool: inboxPool,
             syncPool: async () => {
               // Load inbox-configured source slugs and sync the pool with their connections
-              const { loadInboxConfig } = await import('@craft-agent/shared/inbox')
+              const { loadInboxConfig, saveInboxConfig } = await import('@craft-agent/shared/inbox')
               const inboxConfig = loadInboxConfig(workspaceRootPath)
-              const slugs = inboxConfig.sources.filter(s => s.enabled).map(s => s.sourceSlug)
-              if (slugs.length === 0) return
 
-              const sources = getSourcesBySlugs(workspaceRootPath, slugs).filter(isSourceUsable)
-              if (sources.length === 0) return
+              // Auto-wire hosted MCPs (Gmail, Google Calendar) if user has CLI auth
+              try {
+                const { isHostedMcpAvailable, discoverHostedMcpServers } = await import('@craft-agent/shared/mcp/hosted-mcp-discovery')
+                if (isHostedMcpAvailable()) {
+                  const hostedServers = await discoverHostedMcpServers()
+                  type HostedSourceMapping = { sourceType: 'email' | 'calendar' | 'slack'; fetchToolName: string; fetchToolArgs?: Record<string, unknown> }
+                  const HOSTED_SOURCE_MAP: Record<string, HostedSourceMapping | HostedSourceMapping[]> = {
+                    claude_ai_Gmail: { sourceType: 'email', fetchToolName: 'gmail_search_messages', fetchToolArgs: { query: 'newer_than:1d' } },
+                    claude_ai_Google_Calendar: { sourceType: 'calendar', fetchToolName: 'gcal_list_events' },
+                    claude_ai_Slack: { sourceType: 'slack', fetchToolName: 'slack_search_public_and_private', fetchToolArgs: { query: '*', sort: 'timestamp', count: 20 } },
+                    claude_ai_Microsoft_365: [
+                      { sourceType: 'email', fetchToolName: 'outlook_email_search', fetchToolArgs: { query: '*', count: 20 } },
+                      { sourceType: 'calendar', fetchToolName: 'outlook_calendar_search' },
+                    ],
+                  }
 
-              const { mcpServers, apiServers } = await buildServersFromSources(sources)
-              // Wrap raw McpServer instances into ApiServerConfig format for pool.sync()
-              const wrappedApiServers: Record<string, { type: 'sdk'; instance: any }> = {}
-              for (const [slug, instance] of Object.entries(apiServers)) {
-                wrappedApiServers[slug] = { type: 'sdk', instance }
+                  let configChanged = false
+                  for (const server of hostedServers) {
+                    if (server.status !== 'connected') continue
+                    const rawMapping = HOSTED_SOURCE_MAP[server.slug]
+                    if (!rawMapping) continue
+
+                    // Normalize to array (Microsoft 365 has both email + calendar)
+                    const mappings = Array.isArray(rawMapping) ? rawMapping : [rawMapping]
+
+                    for (const mapping of mappings) {
+                      // Use slug + sourceType as unique key (for providers with multiple capabilities)
+                      const configSlug = mappings.length > 1 ? `${server.slug}_${mapping.sourceType}` : server.slug
+                      const existing = inboxConfig.sources.find(s => s.sourceSlug === configSlug)
+                      if (!existing) {
+                        inboxConfig.sources.push({
+                          sourceSlug: configSlug,
+                          sourceType: mapping.sourceType,
+                          fetchToolName: mapping.fetchToolName,
+                          fetchToolArgs: mapping.fetchToolArgs,
+                          enabled: true,
+                        })
+                        configChanged = true
+                        sessionLog.info(`Auto-wired hosted MCP source: ${configSlug}`)
+                      }
+                    }
+
+                    // Register hosted client in pool if not already connected
+                    if (!inboxPool.getConnectedSlugs().includes(server.slug)) {
+                      const { HostedMcpPoolClient } = await import('@craft-agent/shared/mcp/hosted-mcp-client')
+                      const client = new HostedMcpPoolClient(server.slug, server.tools)
+                      await inboxPool.registerClient(server.slug, client)
+                      sessionLog.info(`Registered hosted MCP client: ${server.slug} (${server.tools.length} tools)`)
+                    }
+                  }
+
+                  if (configChanged) {
+                    saveInboxConfig(workspaceRootPath, inboxConfig)
+                  }
+                }
+              } catch (error) {
+                sessionLog.error('Failed to wire hosted MCPs:', error instanceof Error ? error.message : String(error))
               }
-              await inboxPool.sync(mcpServers, wrappedApiServers)
+
+              // Regular source sync (existing behavior)
+              const slugs = inboxConfig.sources
+                .filter(s => s.enabled && !s.sourceSlug.startsWith('claude_ai_'))
+                .map(s => s.sourceSlug)
+              if (slugs.length === 0 && !inboxPool.getConnectedSlugs().some(s => s.startsWith('claude_ai_'))) return
+
+              if (slugs.length > 0) {
+                const sources = getSourcesBySlugs(workspaceRootPath, slugs).filter(isSourceUsable)
+                if (sources.length > 0) {
+                  const { mcpServers, apiServers } = await buildServersFromSources(sources)
+                  const wrappedApiServers: Record<string, { type: 'sdk'; instance: any }> = {}
+                  for (const [slug, instance] of Object.entries(apiServers)) {
+                    wrappedApiServers[slug] = { type: 'sdk', instance }
+                  }
+                  await inboxPool.sync(mcpServers, wrappedApiServers)
+                }
+              }
             },
           })
 
           const syncHandler = new InboxSyncHandler(syncService, automationSystem.eventBus)
           syncHandler.start()
           this.inboxSyncHandlers.set(workspaceRootPath, syncHandler)
+
+          // Bridge event bus → RPC push so the renderer updates when background sync completes
+          automationSystem.eventBus.on('InboxNewMessages', async () => {
+            this.broadcastToWorkspace(workspaceId, 'inbox:changed')
+          })
+          automationSystem.eventBus.on('CalendarEventsPrepared', async () => {
+            this.broadcastToWorkspace(workspaceId, 'calendar:changed')
+          })
+
           sessionLog.info(`Initialized InboxSyncHandler for workspace ${workspaceId}`)
         } catch (error) {
           sessionLog.error(`Failed to initialize inbox sync for workspace ${workspaceId}:`, error)
@@ -1469,6 +1542,11 @@ export class SessionManager implements ISessionManager {
         await this.reloadSessionSources(managed)
       }
     }
+  }
+
+  private broadcastToWorkspace(workspaceId: string, channel: string): void {
+    if (!this.eventSink) return
+    this.eventSink(channel, { to: 'workspace', workspaceId }, workspaceId)
   }
 
   private broadcastSourcesChanged(workspaceId: string, sources: LoadedSource[]): void {
@@ -2438,6 +2516,14 @@ export class SessionManager implements ISessionManager {
       })
     }
 
+    // Log inbox/calendar context
+    if (options?.inboxMessageId) {
+      sessionLog.info('Creating session from inbox message', { inboxMessageId: options.inboxMessageId, workspaceId })
+    }
+    if (options?.calendarEventId) {
+      sessionLog.info('Creating session from calendar event', { calendarEventId: options.calendarEventId, workspaceId })
+    }
+
     // Use storage layer to create and persist the session
     const storedSession = await createStoredSession(workspaceRootPath, {
       name: options?.name,
@@ -2450,6 +2536,8 @@ export class SessionManager implements ISessionManager {
       inboxMessageId: options?.inboxMessageId,
       calendarEventId: options?.calendarEventId,
     })
+
+    sessionLog.info('Session created', { sessionId: storedSession.id, name: options?.name, workspaceId })
 
     // Branch: copy messages from source session up to and including the branch point
     if (validatedBranch) {

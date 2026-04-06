@@ -35,6 +35,8 @@ export function autoWireSource(
   sourceSlug: string,
   capabilities: InboxCapability[],
 ): AutoWireResult {
+  log.info(`Auto-wire requested for ${sourceSlug} with ${capabilities.length} capabilities: ${capabilities.map(c => c.displayName).join(', ')}`);
+
   if (capabilities.length === 0) {
     return { added: [], alreadyWired: [] };
   }
@@ -50,6 +52,7 @@ export function autoWireSource(
 
     if (exists) {
       alreadyWired.push(cap.displayName);
+      log.debug(`Skipping ${sourceSlug}/${cap.displayName}: already wired`);
       continue;
     }
 

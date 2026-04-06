@@ -28,18 +28,35 @@ mcp__craft-agents-docs__SearchCraftAgents({ query: "{service} source setup" })
 
 **Why this matters:** Some services have important prerequisites or gotchas that MUST be checked before creating a source. Skipping this step can lead to failed setups or redundant configurations.
 
-### 0.5. Choose Source vs Browser Path (RECOMMENDED PRE-FLIGHT)
+### 0.5. Check for Claude.ai Hosted MCPs First (RECOMMENDED PRE-FLIGHT)
 
-Sources remain the default for reusable integrations. Before building a new source, ask: **Is this repeatable integration work, or a one-off/UI-driven task?**
+**Before creating a source, check if the service is already available as a Claude.ai hosted MCP.**
+
+If the user is logged in with a Claude subscription, Anthropic-hosted MCP tools may already be available — look for tools prefixed with `mcp__claude_ai_*`. These require **zero setup** — no source creation, no OAuth, no API keys.
+
+**Known hosted MCPs** (varies by user's claude.ai integrations):
+- Gmail (`mcp__claude_ai_Gmail__*`) — email search, read, drafts, labels
+- Google Calendar (`mcp__claude_ai_Google_Calendar__*`) — events, free time, scheduling
+- Slack (`mcp__claude_ai_Slack__*`) — messages, channels, threads, canvases
+- Microsoft 365 (`mcp__claude_ai_Microsoft_365__*`) — Outlook email, calendar, SharePoint, Teams
+- Additional services as connected by the user at [claude.ai/settings/connectors](https://claude.ai/settings/connectors)
+
+**If a hosted MCP is available, use it directly.** Only create a source when:
+- The hosted MCP doesn't exist for the service
+- The user wants more control over auth or scopes
+
+### 0.6. Choose Source vs Browser Path
+
+Sources remain the default for reusable integrations when a hosted MCP is not available. Before building a new source, ask: **Is this repeatable integration work, or a one-off/UI-driven task?**
 
 **Prefer creating/using a source when:**
+- No hosted MCP is available for the service
 - The workflow is repeatable and likely to be reused
 - Structured querying/reporting is needed
 - Team consistency and automation matter
-- API/MCP auth is stable enough to maintain
 
 **Prefer in-app browser first (or as fallback) when:**
-- Auth/setup is known to be brittle (common with some Gmail/Microsoft scenarios)
+- Auth/setup is known to be brittle
 - The user needs a one-off task completed quickly
 - The API is limited, unstable, or missing required operations
 - The workflow is UI-first and not worth full integration overhead
@@ -704,22 +721,34 @@ For favicon resolution, a cache maps provider names to their canonical domains a
 
 ## Common Providers
 
-### Gmail (and other Google services)
-Provider: `google`, Type: `api`
-Requires user-provided OAuth credentials in the source config:
-- `googleOAuthClientId`: Your Google OAuth Client ID
-- `googleOAuthClientSecret`: Your Google OAuth Client Secret
+> **Important:** Before creating any source, check if the service is already available as a Claude.ai hosted MCP (see section 0.5 above). Hosted MCPs require zero setup — no source creation, no OAuth, no API keys. Look for tools prefixed with `mcp__claude_ai_*` in your tool list.
 
-Create credentials at [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (Desktop app type).
-Uses OAuth via `source_google_oauth_trigger`.
+### Gmail
+**Hosted MCP (preferred):** Available as `mcp__claude_ai_Gmail__*` if the user has connected Gmail at [claude.ai/settings/connectors](https://claude.ai/settings/connectors). Use directly — no source setup needed. Automatically wired into the Inbox UI.
+**Source fallback:** Provider: `google`, Type: `api`. Requires user-provided OAuth credentials (`googleOAuthClientId`, `googleOAuthClientSecret`) from [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Uses `source_google_oauth_trigger`.
+
+### Google Calendar
+**Hosted MCP (preferred):** Available as `mcp__claude_ai_Google_Calendar__*` if connected at [claude.ai/settings/connectors](https://claude.ai/settings/connectors). Use directly — no source setup needed. Automatically wired into the Calendar UI.
+**Source fallback:** Same as Gmail — provider `google`, requires user-provided OAuth credentials.
+
+### Other Google services (Drive, Docs, Sheets, YouTube, Search Console)
+Provider: `google`, Type: `api`. Requires user-provided OAuth credentials (`googleOAuthClientId`, `googleOAuthClientSecret`) from [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Uses `source_google_oauth_trigger`.
 
 ### Linear
-Provider: `linear`, Type: `mcp`
-URL: `https://mcp.linear.app`, OAuth auth.
+**Hosted MCP:** Check for `mcp__claude_ai_Linear__*` tools first.
+**Source:** Provider: `linear`, Type: `mcp`. URL: `https://mcp.linear.app`, OAuth auth.
 
 ### GitHub
-Provider: `github`, Type: `mcp`
-URL: `https://api.githubcopilot.com/mcp/`, **bearer auth** (PAT required - OAuth will fail).
+**Hosted MCP:** Check for `mcp__claude_ai_GitHub__*` tools first.
+**Source:** Provider: `github`, Type: `mcp`. URL: `https://api.githubcopilot.com/mcp/`, **bearer auth** (PAT required - OAuth will fail).
+
+### Slack
+**Hosted MCP:** Check for `mcp__claude_ai_Slack__*` tools first.
+**Source:** Provider: `slack`, Type: `api`. Uses `source_slack_oauth_trigger`.
+
+### Outlook / Microsoft Calendar
+**Hosted MCP:** Check for `mcp__claude_ai_Outlook__*` or `mcp__claude_ai_Microsoft_Calendar__*` tools first.
+**Source:** Provider: `microsoft`, Type: `api`. Uses `source_microsoft_oauth_trigger`.
 
 ### Exa (Search)
 Provider: `exa`, Type: `api`

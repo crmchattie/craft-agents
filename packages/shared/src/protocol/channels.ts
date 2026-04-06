@@ -165,6 +165,8 @@ export const RPC_CHANNELS = {
     HAS_CLAUDE_OAUTH_STATE: 'onboarding:hasClaudeOAuthState',
     CLEAR_CLAUDE_OAUTH_STATE: 'onboarding:clearClaudeOAuthState',
     DEFER_SETUP: 'onboarding:deferSetup',
+    CLAUDE_CODE_AUTH_LOGIN: 'onboarding:claudeCodeAuthLogin',
+    CLAUDE_CODE_AUTH_STATUS: 'onboarding:claudeCodeAuthStatus',
   },
   llmConnections: {
     LIST: 'LLM_Connection:list',

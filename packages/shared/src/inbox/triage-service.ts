@@ -139,13 +139,22 @@ export class TriageService {
     customInstructions: string,
   ): Promise<{ triaged: number; tasksCreated: number }> {
     const messages = readMessages(this.workspaceRootPath);
+    const alreadyTriaged = messages.filter(m => m.triage).length;
     const untriaged = messages.filter(m => !m.triage);
-    if (untriaged.length === 0) return { triaged: 0, tasksCreated: 0 };
+    if (untriaged.length === 0) {
+      log.debug(`All ${alreadyTriaged} messages already triaged, nothing to do`);
+      return { triaged: 0, tasksCreated: 0 };
+    }
 
-    log.debug(`Triaging ${untriaged.length} messages`);
+    const totalBatches = Math.ceil(untriaged.length / BATCH_SIZE);
+    log.info(`Triaging ${untriaged.length} messages (${alreadyTriaged} already triaged), model=${model || 'default'}, batches=${totalBatches}`);
 
+    let actionableCount = 0;
     for (let i = 0; i < untriaged.length; i += BATCH_SIZE) {
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
       const batch = untriaged.slice(i, i + BATCH_SIZE);
+      log.debug(`Processing message batch ${batchNum}/${totalBatches} (${batch.length} items)`);
+      const batchStart = Date.now();
       const triageResults = await this.callMessageTriage(batch, model, customInstructions);
 
       for (let j = 0; j < batch.length; j++) {
@@ -165,6 +174,7 @@ export class TriageService {
         msg.triage = triage;
 
         if (triage.isActionable) {
+          actionableCount++;
           await this.eventBus.emit('InboxActionableMessage', {
             workspaceId: this.workspaceId,
             timestamp: Date.now(),
@@ -172,10 +182,11 @@ export class TriageService {
           });
         }
       }
+      log.debug(`Batch ${batchNum}/${totalBatches} complete in ${Date.now() - batchStart}ms`);
     }
 
     rewriteMessages(this.workspaceRootPath, messages);
-    log.debug(`Triaged ${untriaged.length} messages`);
+    log.info(`Triaged ${untriaged.length} messages: ${actionableCount} actionable`);
     return { triaged: untriaged.length, tasksCreated: 0 };
   }
 
@@ -209,13 +220,22 @@ export class TriageService {
     customInstructions: string,
   ): Promise<{ triaged: number; tasksCreated: number }> {
     const events = readEvents(this.workspaceRootPath);
+    const alreadyTriaged = events.filter(e => e.triage).length;
     const untriaged = events.filter(e => !e.triage);
-    if (untriaged.length === 0) return { triaged: 0, tasksCreated: 0 };
+    if (untriaged.length === 0) {
+      log.debug(`All ${alreadyTriaged} events already triaged, nothing to do`);
+      return { triaged: 0, tasksCreated: 0 };
+    }
 
-    log.debug(`Triaging ${untriaged.length} calendar events`);
+    const totalBatches = Math.ceil(untriaged.length / BATCH_SIZE);
+    log.info(`Triaging ${untriaged.length} calendar events (${alreadyTriaged} already triaged), model=${model || 'default'}, batches=${totalBatches}`);
 
+    let needsPrepCount = 0;
     for (let i = 0; i < untriaged.length; i += BATCH_SIZE) {
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
       const batch = untriaged.slice(i, i + BATCH_SIZE);
+      log.debug(`Processing event batch ${batchNum}/${totalBatches} (${batch.length} items)`);
+      const batchStart = Date.now();
       const triageResults = await this.callEventTriage(batch, model, customInstructions);
 
       for (let j = 0; j < batch.length; j++) {
@@ -231,11 +251,13 @@ export class TriageService {
           model,
         };
         evt.triage = triage;
+        if (triage.needsPrep) needsPrepCount++;
       }
+      log.debug(`Batch ${batchNum}/${totalBatches} complete in ${Date.now() - batchStart}ms`);
     }
 
     replaceEvents(this.workspaceRootPath, events);
-    log.debug(`Triaged ${untriaged.length} events`);
+    log.info(`Triaged ${untriaged.length} events: ${needsPrepCount} need prep`);
     return { triaged: untriaged.length, tasksCreated: 0 };
   }
 

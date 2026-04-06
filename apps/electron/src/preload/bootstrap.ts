@@ -319,7 +319,7 @@ client.onConnectionStateChanged((state) => {
   }
 }
 
-// ── startClaudeOAuth ─────────────────────────────────────────────────────
+/* [ROLLBACK] Original startClaudeOAuth override — replaced by CLI auth login.
 // Override the channel-map stub: the server now returns authUrl without opening
 // the browser. We open it locally so it works in remote mode.
 // Claude OAuth is two-step: browser opens → user copies code → pastes in UI.
@@ -341,6 +341,7 @@ client.onConnectionStateChanged((state) => {
     }
   }
 }
+*/
 
 // ── performChatGptOAuth ──────────────────────────────────────────────────
 // Same shape as performOAuth: callback server (port 1455) → chatgpt:startOAuth →

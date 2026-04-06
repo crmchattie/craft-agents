@@ -177,6 +177,17 @@ export function setExecutable(path: string) {
 }
 
 /**
+ * Get the resolved CLI and runtime paths for spawning Claude Code subprocesses.
+ * Used by non-agent code (e.g., `auth login`, `auth status` commands).
+ */
+export function getClaudeCliPaths(): { cliPath: string | null; executable: string } {
+    return {
+        cliPath: customPathToClaudeCodeExecutable,
+        executable: customExecutable || 'bun',
+    };
+}
+
+/**
  * Get default SDK options for spawning the Claude Code subprocess.
  *
  * @param envOverrides - Per-session environment variable overrides.

@@ -89,6 +89,14 @@ export class InboxSyncService {
       }
     }
 
+    const enabledSources = config.sources.filter(s => s.enabled);
+    const disabledSources = config.sources.filter(s => !s.enabled);
+    log.info(`Sync starting: ${enabledSources.length} enabled sources, ${disabledSources.length} disabled, force=${force}`);
+    if (disabledSources.length > 0) {
+      log.debug(`Disabled sources skipped: ${disabledSources.map(s => s.sourceSlug).join(', ')}`);
+    }
+
+    const syncStartTime = Date.now();
     this.syncing = true;
     try {
       // Ensure pool has the right source connections before fetching
@@ -126,6 +134,8 @@ export class InboxSyncService {
         }
       }
 
+      const syncDuration = Date.now() - syncStartTime;
+      log.info(`Sync complete in ${syncDuration}ms: ${result.newMessageCount} new messages, ${result.newEventCount} new events, ${result.errors.length} errors`);
       return result;
     } finally {
       this.syncing = false;
@@ -142,7 +152,9 @@ export class InboxSyncService {
 
   private async runSync(config: InboxConfig): Promise<SyncResult> {
     const syncState = readSyncState(this.workspaceRootPath);
-    const existingIds = new Set(readMessages(this.workspaceRootPath).map(m => m.id));
+    const existingMessages = readMessages(this.workspaceRootPath);
+    const existingIds = new Set(existingMessages.map(m => m.id));
+    log.debug(`Existing messages: ${existingIds.size}, sync state cursors: ${Object.keys(syncState).length}`);
 
     let totalNewMessages = 0;
     let totalNewEvents = 0;
@@ -250,6 +262,9 @@ export class InboxSyncService {
       ...source.fetchToolArgs,
       startTime: now.toISOString(),
       endTime: lookaheadEnd.toISOString(),
+      // Also set timeMin/timeMax for Google Calendar hosted MCPs (which use RFC3339 field names)
+      timeMin: now.toISOString(),
+      timeMax: lookaheadEnd.toISOString(),
     };
 
     log.debug(`Fetching calendar events from ${source.sourceSlug} via ${proxyName}`);
@@ -287,6 +302,13 @@ export class InboxSyncService {
   private normalizeMessages(result: McpToolResult, source: InboxSourceConfig): InboxMessage[] {
     try {
       const data = this.parseToolContent(result);
+      // Handle nested response formats (e.g., hosted MCPs return { messages: [...] })
+      const items = this.extractArray(data, ['messages', 'results', 'items', 'data']);
+      if (items) {
+        return items
+          .map((item: Record<string, unknown>) => this.toInboxMessage(item, source))
+          .filter((m): m is InboxMessage => m !== null);
+      }
       if (!Array.isArray(data)) {
         log.debug('MCP tool returned non-array, wrapping:', typeof data);
         return data ? [this.toInboxMessage(data as Record<string, unknown>, source)].filter((m): m is InboxMessage => m !== null) : [];
@@ -303,6 +325,13 @@ export class InboxSyncService {
   private normalizeEvents(result: McpToolResult, source: InboxSourceConfig): CalendarEvent[] {
     try {
       const data = this.parseToolContent(result);
+      // Handle nested response formats (e.g., hosted MCPs return { events: [...] })
+      const items = this.extractArray(data, ['events', 'items', 'results', 'data']);
+      if (items) {
+        return items
+          .map((item: Record<string, unknown>) => this.toCalendarEvent(item, source))
+          .filter((e): e is CalendarEvent => e !== null);
+      }
       if (!Array.isArray(data)) {
         log.debug('MCP tool returned non-array for calendar, wrapping:', typeof data);
         return data ? [this.toCalendarEvent(data as Record<string, unknown>, source)].filter((e): e is CalendarEvent => e !== null) : [];
@@ -316,10 +345,45 @@ export class InboxSyncService {
     }
   }
 
+  /** Extract an array from a nested response object by checking common wrapper keys. */
+  private extractArray(data: unknown, keys: string[]): Record<string, unknown>[] | null {
+    if (Array.isArray(data)) return null; // Already an array, skip extraction
+    if (!data || typeof data !== 'object') return null;
+    for (const key of keys) {
+      const val = (data as Record<string, unknown>)[key];
+      if (Array.isArray(val)) return val;
+    }
+    return null;
+  }
+
   private toInboxMessage(raw: Record<string, unknown>, source: InboxSourceConfig): InboxMessage | null {
     try {
-      const externalId = String(raw.id ?? raw.externalId ?? raw.ts ?? '');
+      const externalId = String(raw.id ?? raw.messageId ?? raw.externalId ?? raw.ts ?? '');
       if (!externalId) return null;
+
+      // Extract fields from nested headers (Gmail hosted MCP format)
+      const headers = raw.headers as Record<string, string> | undefined;
+      const fromRaw = raw.from ?? headers?.From ?? raw.sender ?? raw.user ?? 'Unknown';
+      const subjectRaw = raw.subject ?? headers?.Subject;
+      const toRaw = raw.to ?? headers?.To;
+
+      // Parse "Name <email>" format from Gmail headers
+      const fromMatch = String(fromRaw).match(/^(.+?)\s*<([^>]+)>$/);
+      const fromName = fromMatch ? fromMatch[1]!.trim() : String(fromRaw);
+      const fromEmail = fromMatch ? fromMatch[2]! : (raw.email as string | undefined ?? raw.from_email as string | undefined);
+
+      // Parse receivedAt from various formats including Unix timestamp (ms)
+      let receivedAt: string;
+      if (raw.receivedAt) {
+        receivedAt = String(raw.receivedAt);
+      } else if (raw.internalDate) {
+        // Gmail hosted MCP returns Unix timestamp in milliseconds
+        receivedAt = new Date(Number(raw.internalDate)).toISOString();
+      } else if (raw.timestamp || raw.date || headers?.Date) {
+        receivedAt = String(raw.timestamp ?? raw.date ?? headers?.Date);
+      } else {
+        receivedAt = new Date().toISOString();
+      }
 
       return {
         id: `${source.sourceSlug}:${externalId}`,
@@ -329,18 +393,18 @@ export class InboxSyncService {
         threadId: raw.threadId as string | undefined ?? raw.thread_ts as string | undefined,
         channel: raw.channel as string | undefined ?? raw.folder as string | undefined,
         from: {
-          name: String(raw.from ?? raw.sender ?? raw.user ?? 'Unknown'),
+          name: fromName,
           handle: raw.handle as string | undefined ?? raw.username as string | undefined,
-          email: raw.email as string | undefined ?? raw.from_email as string | undefined,
+          email: fromEmail,
         },
-        to: raw.to ? (Array.isArray(raw.to) ? raw.to.map((r: Record<string, unknown>) => ({
+        to: toRaw ? (Array.isArray(toRaw) ? toRaw.map((r: Record<string, unknown>) => ({
           name: String(r.name ?? ''),
           email: r.email as string | undefined,
         })) : undefined) : undefined,
-        subject: raw.subject as string | undefined,
-        body: String(raw.body ?? raw.text ?? raw.content ?? raw.message ?? ''),
+        subject: subjectRaw as string | undefined,
+        body: String(raw.body ?? raw.snippet ?? raw.text ?? raw.content ?? raw.message ?? ''),
         bodyHtml: raw.bodyHtml as string | undefined ?? raw.html as string | undefined,
-        receivedAt: String(raw.receivedAt ?? raw.timestamp ?? raw.date ?? new Date().toISOString()),
+        receivedAt,
         isRead: false,
       };
     } catch (error) {
@@ -354,6 +418,21 @@ export class InboxSyncService {
       const externalId = String(raw.id ?? raw.eventId ?? '');
       if (!externalId) return null;
 
+      // Extract start/end times — handle Google Calendar's object format
+      // { date: "2026-04-05" } for all-day, { dateTime: "2026-04-05T14:00:00-04:00" } for timed
+      const startObj = raw.start as Record<string, string> | string | undefined;
+      const endObj = raw.end as Record<string, string> | string | undefined;
+      const startTime = typeof startObj === 'object' && startObj !== null
+        ? (startObj.dateTime ?? startObj.date ?? '')
+        : String(raw.startTime ?? raw.startDateTime ?? startObj ?? '');
+      const endTime = typeof endObj === 'object' && endObj !== null
+        ? (endObj.dateTime ?? endObj.date ?? '')
+        : String(raw.endTime ?? raw.endDateTime ?? endObj ?? '');
+
+      // Detect all-day: explicit flag, or start has date but no dateTime
+      const allDay = Boolean(raw.allDay ?? raw.isAllDay
+        ?? (typeof startObj === 'object' && startObj !== null && startObj.date && !startObj.dateTime));
+
       return {
         id: `${source.sourceSlug}:${externalId}`,
         sourceSlug: source.sourceSlug,
@@ -361,22 +440,23 @@ export class InboxSyncService {
         title: String(raw.title ?? raw.summary ?? raw.subject ?? 'Untitled'),
         description: raw.description as string | undefined ?? raw.body as string | undefined,
         location: raw.location as string | undefined,
-        startTime: String(raw.startTime ?? raw.start ?? raw.startDateTime ?? ''),
-        endTime: String(raw.endTime ?? raw.end ?? raw.endDateTime ?? ''),
-        allDay: Boolean(raw.allDay ?? raw.isAllDay ?? false),
+        startTime,
+        endTime,
+        allDay,
         organizer: raw.organizer ? {
-          name: String((raw.organizer as Record<string, unknown>).name ?? ''),
+          name: String((raw.organizer as Record<string, unknown>).displayName ?? (raw.organizer as Record<string, unknown>).name ?? ''),
           email: String((raw.organizer as Record<string, unknown>).email ?? ''),
         } : undefined,
         attendees: Array.isArray(raw.attendees) ? raw.attendees.map((a: Record<string, unknown>) => ({
-          name: String(a.name ?? ''),
+          name: String(a.displayName ?? a.name ?? ''),
           email: String(a.email ?? ''),
-          status: (a.status as 'accepted' | 'tentative' | 'declined') ?? 'tentative',
+          status: (a.responseStatus ?? a.status ?? 'tentative') as 'accepted' | 'tentative' | 'declined',
         })) : undefined,
         calendarName: String(raw.calendarName ?? raw.calendar ?? source.sourceSlug),
         calendarColor: raw.calendarColor as string | undefined ?? raw.color as string | undefined,
         meetingUrl: raw.meetingUrl as string | undefined
           ?? raw.hangoutLink as string | undefined
+          ?? raw.htmlLink as string | undefined
           ?? raw.onlineMeetingUrl as string | undefined,
       };
     } catch (error) {

@@ -660,6 +660,9 @@ export interface PrerequisiteManagerLike {
 /** Built-in MCP servers that are always available (not user sources) */
 const BUILT_IN_MCP_SERVERS = new Set(['session', 'craft-agents-docs']);
 
+/** Prefix for Anthropic-hosted MCP servers (Gmail, Google Calendar, etc.) injected by the SDK */
+const CLAUDE_AI_MCP_PREFIX = 'claude_ai_';
+
 /** File write tools that require permission in ask mode */
 const FILE_WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 
@@ -752,7 +755,7 @@ export function runPreToolUseChecks(ctx: PreToolUseInput): PreToolUseCheckResult
   if (toolName.startsWith('mcp__')) {
     const parts = toolName.split('__');
     const serverName = parts[1];
-    if (parts.length >= 3 && serverName && !BUILT_IN_MCP_SERVERS.has(serverName)) {
+    if (parts.length >= 3 && serverName && !BUILT_IN_MCP_SERVERS.has(serverName) && !serverName.startsWith(CLAUDE_AI_MCP_PREFIX)) {
       const isActive = activeSourceSlugs.includes(serverName);
       if (!isActive) {
         const sourceExists = allSourceSlugs.includes(serverName);

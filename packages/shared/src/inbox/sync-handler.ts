@@ -22,6 +22,7 @@ export class InboxSyncHandler {
     this.eventBus = eventBus;
     this.handler = async (_payload: SchedulerTickPayload) => {
       try {
+        log.debug('SchedulerTick received, triggering sync');
         await this.syncService.sync(false);
       } catch (error) {
         log.error('Inbox sync on SchedulerTick failed:', error);

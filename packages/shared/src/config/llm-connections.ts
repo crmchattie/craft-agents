@@ -794,7 +794,15 @@ export async function resolveAuthEnvVars(
     }
   } else if (authType === 'oauth') {
     if (connection.providerType === 'anthropic') {
-      // Anthropic OAuth uses getValidClaudeOAuthToken which handles token refresh
+      // If the user has a valid Claude Code CLI session, let the SDK subprocess
+      // use its native keychain auth. This enables Anthropic-hosted MCP servers
+      // (Gmail, Google Calendar, etc.) tied to their claude.ai account.
+      // We import lazily to avoid circular deps at module load.
+      const { hasClaudeCodeCliAuth } = await import('../auth/state.ts');
+      if (hasClaudeCodeCliAuth()) {
+        return { envVars, success: true };
+      }
+      // Fallback: use app's own OAuth token
       const tokenResult = await getValidOAuthToken(connectionSlug);
       if (tokenResult.accessToken) {
         envVars.CLAUDE_CODE_OAUTH_TOKEN = tokenResult.accessToken;

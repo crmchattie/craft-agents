@@ -646,11 +646,14 @@ export class ClaudeAgent extends BaseAgent {
     // Claude subprocesses must never inherit Bedrock-routing toggles from a
     // previous connection or parent process environment.
     delete process.env.ANTHROPIC_API_KEY;
-    delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
     delete process.env.ANTHROPIC_BASE_URL;
     clearClaudeBedrockRoutingEnvVars();
 
-    // Resolve auth env vars via shared utility
+    // Resolve auth env vars via shared utility.
+    // Note: for Anthropic OAuth with a valid Claude Code CLI session,
+    // resolveAuthEnvVars returns empty envVars so the SDK subprocess uses
+    // its native keychain auth (which enables hosted MCP servers).
+    // We only clear CLAUDE_CODE_OAUTH_TOKEN if new env vars will be set.
     const manager = getCredentialManager();
     const result = await resolveAuthEnvVars(connection, slug, manager, getValidClaudeOAuthToken);
 
@@ -658,7 +661,12 @@ export class ClaudeAgent extends BaseAgent {
       return { authInjected: false, authWarning: result.warning, authWarningLevel: 'error' };
     }
 
-    // Apply env vars to process.env (for SDK subprocess) and envOverrides (per-session isolation)
+    // Apply env vars to process.env (for SDK subprocess) and envOverrides (per-session isolation).
+    // Only clear CLAUDE_CODE_OAUTH_TOKEN if we're setting a new value — otherwise
+    // let the SDK subprocess use its native keychain auth for hosted MCP access.
+    if (result.envVars.CLAUDE_CODE_OAUTH_TOKEN) {
+      delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+    }
     for (const [key, value] of Object.entries(result.envVars)) {
       process.env[key] = value;
     }

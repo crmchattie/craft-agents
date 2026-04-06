@@ -21,14 +21,47 @@ export const HANDLED_CHANNELS = [
 export function registerSourcesHandlers(server: RpcServer, deps: HandlerDeps): void {
   const log = deps.platform.logger
 
-  // Get all sources for a workspace
+  // Get all sources for a workspace (includes hosted MCPs from claude.ai)
   server.handle(RPC_CHANNELS.sources.GET, async (_ctx, workspaceId: string) => {
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) {
       log.error(`SOURCES_GET: Workspace not found: ${workspaceId}`)
       return []
     }
-    return loadWorkspaceSources(workspace.rootPath)
+    const sources = loadWorkspaceSources(workspace.rootPath)
+
+    // Append hosted MCP sources (Gmail, Google Calendar, Slack, etc.)
+    try {
+      const { isHostedMcpAvailable, discoverHostedMcpServers } = await import('@craft-agent/shared/mcp/hosted-mcp-discovery')
+      if (isHostedMcpAvailable()) {
+        const hostedServers = await discoverHostedMcpServers()
+        for (const server of hostedServers) {
+          if (server.status !== 'connected') continue
+          // Create a virtual LoadedSource for UI display
+          sources.push({
+            config: {
+              id: `hosted-${server.slug}`,
+              name: server.name.replace('claude.ai ', ''),
+              slug: server.slug,
+              enabled: true,
+              provider: 'claude_ai',
+              type: 'mcp' as const,
+              isAuthenticated: true,
+              connectionStatus: 'connected' as const,
+              tagline: `Connected via Claude.ai`,
+            },
+            guide: null,
+            folderPath: '',
+            workspaceRootPath: workspace.rootPath,
+            workspaceId,
+          })
+        }
+      }
+    } catch (error) {
+      log.error('Failed to discover hosted MCPs for sources list:', error instanceof Error ? error.message : String(error))
+    }
+
+    return sources
   })
 
   // Create a new source

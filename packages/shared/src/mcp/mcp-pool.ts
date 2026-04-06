@@ -151,8 +151,9 @@ export class McpClientPool {
   /**
    * Register a client: connect, cache tools, build proxy mappings.
    * Shared logic for both remote MCP and in-process API sources.
+   * Public to allow hosted MCP clients to be registered externally.
    */
-  protected async registerClient(slug: string, client: PoolClient): Promise<void> {
+  async registerClient(slug: string, client: PoolClient): Promise<void> {
     // listTools() triggers connect() internally for both CraftMcpClient and ApiSourcePoolClient
     const tools = await client.listTools();
     this.clients.set(slug, client);

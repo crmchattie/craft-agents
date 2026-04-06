@@ -73,7 +73,9 @@ export function loadInboxConfig(workspaceRootPath: string): InboxConfig {
   }
   try {
     const raw = readJsonFileSync<Partial<InboxConfig>>(configPath);
-    return { ...DEFAULT_INBOX_CONFIG, ...raw, sources: [...(raw.sources ?? [])] };
+    const config = { ...DEFAULT_INBOX_CONFIG, ...raw, sources: [...(raw.sources ?? [])] };
+    log.debug(`Loaded inbox config: ${config.sources.length} sources, sync=${config.backgroundSyncEnabled}, triage=${config.triageEnabled}`);
+    return config;
   } catch (error) {
     log.error('Failed to load inbox-config.json, using defaults:', error);
     return { ...DEFAULT_INBOX_CONFIG, sources: [] };
@@ -83,6 +85,7 @@ export function loadInboxConfig(workspaceRootPath: string): InboxConfig {
 export function saveInboxConfig(workspaceRootPath: string, config: InboxConfig): void {
   const configPath = getInboxConfigPath(workspaceRootPath);
   atomicWriteFileSync(configPath, JSON.stringify(config, null, 2));
+  log.info(`Saved inbox config: ${config.sources.length} sources`);
 }
 
 // ============================================================================

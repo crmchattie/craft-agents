@@ -524,6 +524,18 @@ export class ClaudeEventAdapter extends BaseEventAdapter {
       if ('tools' in msg && Array.isArray(msg.tools)) {
         this._sdkTools = msg.tools;
         this.callbacks.onDebug?.(`SDK init: captured ${this._sdkTools.length} tools`);
+        // Log hosted MCP tools for debugging
+        const claudeAiTools = this._sdkTools.filter((t: string) => t.includes('claude_ai'));
+        if (claudeAiTools.length > 0) {
+          this.callbacks.onDebug?.(`SDK init: found ${claudeAiTools.length} claude.ai hosted MCP tools: ${claudeAiTools.join(', ')}`);
+        } else {
+          this.callbacks.onDebug?.('SDK init: NO claude.ai hosted MCP tools found');
+        }
+      }
+      // Log MCP server status from init message
+      if ('mcp_servers' in msg && Array.isArray(msg.mcp_servers)) {
+        const servers = msg.mcp_servers.map((s: any) => `${s.name}(${s.status})`).join(', ');
+        this.callbacks.onDebug?.(`SDK init: MCP servers: ${servers}`);
       }
     } else if (msg.subtype === 'compact_boundary') {
       events.push({

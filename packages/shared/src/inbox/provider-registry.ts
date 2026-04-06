@@ -13,6 +13,9 @@ import {
   inferSlackServiceFromUrl,
 } from '../sources/types.ts';
 import type { InboxSourceConfig } from './config.ts';
+import { createLogger } from '../utils/debug.ts';
+
+const log = createLogger('inbox-provider-registry');
 
 // ============================================================================
 // Types
@@ -99,6 +102,51 @@ const PROVIDER_REGISTRY: RegistryEntry[] = [
       displayName: 'Slack',
     }],
   },
+
+  // Anthropic-hosted MCP servers (claude.ai integrations)
+  {
+    provider: 'claude_ai',
+    service: 'Gmail',
+    capabilities: [{
+      inboxSourceType: 'email',
+      fetchToolName: 'gmail_search_messages',
+      displayName: 'Gmail (Claude.ai)',
+    }],
+  },
+  {
+    provider: 'claude_ai',
+    service: 'Google_Calendar',
+    capabilities: [{
+      inboxSourceType: 'calendar',
+      fetchToolName: 'gcal_list_events',
+      displayName: 'Google Calendar (Claude.ai)',
+    }],
+  },
+  {
+    provider: 'claude_ai',
+    service: 'Slack',
+    capabilities: [{
+      inboxSourceType: 'slack',
+      fetchToolName: 'slack_search_public_and_private',
+      displayName: 'Slack (Claude.ai)',
+    }],
+  },
+  {
+    provider: 'claude_ai',
+    service: 'Microsoft_365',
+    capabilities: [
+      {
+        inboxSourceType: 'email',
+        fetchToolName: 'outlook_email_search',
+        displayName: 'Outlook (Claude.ai)',
+      },
+      {
+        inboxSourceType: 'calendar',
+        fetchToolName: 'outlook_calendar_search',
+        displayName: 'Outlook Calendar (Claude.ai)',
+      },
+    ],
+  },
 ];
 
 export { PROVIDER_REGISTRY };
@@ -113,7 +161,10 @@ export { PROVIDER_REGISTRY };
  */
 export function detectCapabilities(source: FolderSourceConfig): InboxCapability[] {
   const provider = source.provider?.toLowerCase();
-  if (!provider) return [];
+  if (!provider) {
+    log.debug(`No provider set for source, skipping capability detection`);
+    return [];
+  }
 
   // Resolve the service from explicit config or URL inference
   const service = resolveService(source);
@@ -123,6 +174,12 @@ export function detectCapabilities(source: FolderSourceConfig): InboxCapability[
     if (entry.provider !== provider) continue;
     if (entry.service && entry.service !== service) continue;
     capabilities.push(...entry.capabilities);
+  }
+
+  if (capabilities.length > 0) {
+    log.info(`Detected capabilities for provider=${provider} service=${service ?? 'any'}: ${capabilities.map(c => c.displayName).join(', ')}`);
+  } else {
+    log.debug(`No capabilities found for provider=${provider} service=${service ?? 'any'}`);
   }
 
   return capabilities;
@@ -179,6 +236,10 @@ export function discoverCapabilitiesFromTools(toolNames: string[]): InboxCapabil
         displayName: 'Calendar',
       });
     }
+  }
+
+  if (capabilities.length > 0) {
+    log.info(`Discovered capabilities from MCP tools: ${capabilities.map(c => `${c.displayName} (${c.fetchToolName})`).join(', ')}`);
   }
 
   return capabilities;
