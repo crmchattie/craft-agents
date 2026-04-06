@@ -15,6 +15,7 @@ import type { createEntitySelection } from '@/hooks/useEntitySelection'
 export interface EntityPanelItem {
   icon?: React.ReactNode
   title: React.ReactNode
+  subtitle?: React.ReactNode
   badges?: React.ReactNode
   trailing?: React.ReactNode
   menu?: React.ReactNode
@@ -75,6 +76,7 @@ export function EntityPanel<T>({
           <EntityRow
             icon={mapped.icon}
             title={mapped.title}
+            subtitle={mapped.subtitle}
             badges={mapped.badges}
             trailing={mapped.trailing}
             isSelected={selectedId === getId(item)}

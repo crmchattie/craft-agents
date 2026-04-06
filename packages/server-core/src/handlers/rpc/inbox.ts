@@ -82,6 +82,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
     if (msg) {
       msg.isRead = true
       rewriteMessages(workspace.rootPath, messages)
+      pushTyped(server, RPC_CHANNELS.inbox.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
     }
   })
 

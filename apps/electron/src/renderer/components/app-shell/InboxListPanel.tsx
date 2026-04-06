@@ -83,28 +83,28 @@ export function InboxListPanel({
         </EntityListEmptyScreen>
       }
       mapItem={(message) => ({
-        icon: message.sourceType === 'slack'
-          ? <MessageSquare className="h-3.5 w-3.5 text-[#4A154B]" />
-          : <Mail className="h-3.5 w-3.5 text-blue-500" />,
+        icon: (
+          <div className="relative">
+            {message.sourceType === 'slack'
+              ? <MessageSquare className="h-3.5 w-3.5 text-[#4A154B]" />
+              : <Mail className="h-3.5 w-3.5 text-blue-500" />}
+            {!message.isRead && (
+              <Circle className="absolute -bottom-4 left-1/2 -translate-x-1/2 h-[5px] w-[5px] fill-blue-500 text-blue-500" />
+            )}
+          </div>
+        ),
         title: (
           <span className={!message.isRead ? 'font-semibold' : ''}>
             {message.from.name}
             {message.channel ? ` · ${message.channel}` : ''}
           </span>
         ),
-        badges: (
-          <>
-            {!message.isRead && <Circle className="h-2 w-2 fill-info text-info" />}
-            {message.triage?.isActionable && (
-              <EntityListBadge colorClass="bg-warning/10 text-warning">
-                <Star className="h-2.5 w-2.5 fill-current" />
-              </EntityListBadge>
-            )}
-            <span className="truncate text-foreground/40">
-              {message.subject ?? message.body.slice(0, 50)}
-            </span>
-          </>
-        ),
+        subtitle: message.subject ?? message.body.slice(0, 80),
+        badges: message.triage?.isActionable ? (
+          <EntityListBadge colorClass="bg-warning/10 text-warning">
+            <Star className="h-2.5 w-2.5 fill-current" />
+          </EntityListBadge>
+        ) : undefined,
         trailing: (
           <span className="text-xs text-foreground/35 shrink-0">
             {formatRelativeTime(message.receivedAt)}
