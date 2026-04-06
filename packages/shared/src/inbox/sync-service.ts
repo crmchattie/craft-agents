@@ -302,8 +302,8 @@ export class InboxSyncService {
   private normalizeMessages(result: McpToolResult, source: InboxSourceConfig): InboxMessage[] {
     try {
       const data = this.parseToolContent(result);
-      // Handle nested response formats (e.g., hosted MCPs return { messages: [...] })
-      const items = this.extractArray(data, ['messages', 'results', 'items', 'data']);
+      // Handle nested response formats (e.g., Gmail: { messages: [...] }, Microsoft Graph: { value: [...] })
+      const items = this.extractArray(data, ['messages', 'value', 'results', 'items', 'data']);
       if (items) {
         return items
           .map((item: Record<string, unknown>) => this.toInboxMessage(item, source))
@@ -325,8 +325,8 @@ export class InboxSyncService {
   private normalizeEvents(result: McpToolResult, source: InboxSourceConfig): CalendarEvent[] {
     try {
       const data = this.parseToolContent(result);
-      // Handle nested response formats (e.g., hosted MCPs return { events: [...] })
-      const items = this.extractArray(data, ['events', 'items', 'results', 'data']);
+      // Handle nested response formats (e.g., Google: { events: [...] }, Microsoft Graph: { value: [...] })
+      const items = this.extractArray(data, ['events', 'value', 'items', 'results', 'data']);
       if (items) {
         return items
           .map((item: Record<string, unknown>) => this.toCalendarEvent(item, source))
@@ -363,26 +363,65 @@ export class InboxSyncService {
 
       // Extract fields from nested headers (Gmail hosted MCP format)
       const headers = raw.headers as Record<string, string> | undefined;
+
+      // From field — handle Gmail headers, Slack user objects, Microsoft Graph emailAddress objects
       const fromRaw = raw.from ?? headers?.From ?? raw.sender ?? raw.user ?? 'Unknown';
+      let fromName: string;
+      let fromEmail: string | undefined;
+      if (typeof fromRaw === 'object' && fromRaw !== null) {
+        // Microsoft Graph: { emailAddress: { name: "...", address: "..." } }
+        const emailAddr = (fromRaw as Record<string, unknown>).emailAddress as Record<string, string> | undefined;
+        if (emailAddr) {
+          fromName = emailAddr.name || emailAddr.address || 'Unknown';
+          fromEmail = emailAddr.address;
+        } else {
+          // Slack: { real_name: "...", display_name: "...", email: "..." } or generic { name, email }
+          const obj = fromRaw as Record<string, unknown>;
+          fromName = String(obj.real_name ?? obj.display_name ?? obj.name ?? 'Unknown');
+          fromEmail = obj.email as string | undefined;
+        }
+      } else {
+        // String format — parse "Name <email>" from Gmail headers
+        const fromMatch = String(fromRaw).match(/^(.+?)\s*<([^>]+)>$/);
+        fromName = fromMatch ? fromMatch[1]!.trim() : String(fromRaw);
+        fromEmail = fromMatch ? fromMatch[2]! : (raw.email as string | undefined ?? raw.from_email as string | undefined);
+      }
+
+      // Subject — Gmail headers, Microsoft Graph, Slack (no subject, use channel)
       const subjectRaw = raw.subject ?? headers?.Subject;
-      const toRaw = raw.to ?? headers?.To;
 
-      // Parse "Name <email>" format from Gmail headers
-      const fromMatch = String(fromRaw).match(/^(.+?)\s*<([^>]+)>$/);
-      const fromName = fromMatch ? fromMatch[1]!.trim() : String(fromRaw);
-      const fromEmail = fromMatch ? fromMatch[2]! : (raw.email as string | undefined ?? raw.from_email as string | undefined);
+      // To — Gmail headers string, Microsoft Graph toRecipients array
+      const toRaw = raw.to ?? raw.toRecipients ?? headers?.To;
 
-      // Parse receivedAt from various formats including Unix timestamp (ms)
+      // Parse receivedAt from various formats
       let receivedAt: string;
       if (raw.receivedAt) {
         receivedAt = String(raw.receivedAt);
+      } else if (raw.receivedDateTime) {
+        // Microsoft Graph format
+        receivedAt = String(raw.receivedDateTime);
       } else if (raw.internalDate) {
         // Gmail hosted MCP returns Unix timestamp in milliseconds
         receivedAt = new Date(Number(raw.internalDate)).toISOString();
+      } else if (raw.ts) {
+        // Slack timestamp (Unix seconds with decimal microseconds, e.g., "1775440851.123456")
+        receivedAt = new Date(Number(String(raw.ts).split('.')[0]) * 1000).toISOString();
       } else if (raw.timestamp || raw.date || headers?.Date) {
         receivedAt = String(raw.timestamp ?? raw.date ?? headers?.Date);
       } else {
         receivedAt = new Date().toISOString();
+      }
+
+      // Normalize toRecipients (Microsoft Graph format: [{ emailAddress: { name, address } }])
+      let to: Array<{ name: string; email?: string }> | undefined;
+      if (Array.isArray(toRaw)) {
+        to = toRaw.map((r: Record<string, unknown>) => {
+          const emailAddr = r.emailAddress as Record<string, string> | undefined;
+          if (emailAddr) {
+            return { name: String(emailAddr.name ?? ''), email: emailAddr.address };
+          }
+          return { name: String(r.name ?? ''), email: r.email as string | undefined };
+        });
       }
 
       return {
@@ -391,21 +430,18 @@ export class InboxSyncService {
         sourceType: source.sourceType as InboxSourceType,
         externalId,
         threadId: raw.threadId as string | undefined ?? raw.thread_ts as string | undefined,
-        channel: raw.channel as string | undefined ?? raw.folder as string | undefined,
+        channel: raw.channel as string | undefined ?? raw.folder as string | undefined ?? raw.folderName as string | undefined,
         from: {
           name: fromName,
           handle: raw.handle as string | undefined ?? raw.username as string | undefined,
           email: fromEmail,
         },
-        to: toRaw ? (Array.isArray(toRaw) ? toRaw.map((r: Record<string, unknown>) => ({
-          name: String(r.name ?? ''),
-          email: r.email as string | undefined,
-        })) : undefined) : undefined,
+        to,
         subject: subjectRaw as string | undefined,
-        body: String(raw.body ?? raw.snippet ?? raw.text ?? raw.content ?? raw.message ?? ''),
+        body: String(raw.body ?? raw.bodyPreview ?? raw.snippet ?? raw.text ?? raw.content ?? raw.message ?? ''),
         bodyHtml: raw.bodyHtml as string | undefined ?? raw.html as string | undefined,
         receivedAt,
-        isRead: false,
+        isRead: Boolean(raw.isRead ?? false),
       };
     } catch (error) {
       log.debug('Failed to normalize message:', error);
@@ -418,8 +454,9 @@ export class InboxSyncService {
       const externalId = String(raw.id ?? raw.eventId ?? '');
       if (!externalId) return null;
 
-      // Extract start/end times — handle Google Calendar's object format
-      // { date: "2026-04-05" } for all-day, { dateTime: "2026-04-05T14:00:00-04:00" } for timed
+      // Extract start/end times — handle multiple formats:
+      // Google Calendar: { date: "2026-04-05" } or { dateTime: "2026-04-05T14:00:00-04:00" }
+      // Microsoft Graph: { dateTime: "2026-04-05T14:00:00", timeZone: "Eastern Standard Time" }
       const startObj = raw.start as Record<string, string> | string | undefined;
       const endObj = raw.end as Record<string, string> | string | undefined;
       const startTime = typeof startObj === 'object' && startObj !== null
@@ -433,31 +470,73 @@ export class InboxSyncService {
       const allDay = Boolean(raw.allDay ?? raw.isAllDay
         ?? (typeof startObj === 'object' && startObj !== null && startObj.date && !startObj.dateTime));
 
+      // Organizer — Google uses { email, self }, Microsoft uses { emailAddress: { name, address } }
+      let organizer: { name: string; email: string } | undefined;
+      if (raw.organizer && typeof raw.organizer === 'object') {
+        const org = raw.organizer as Record<string, unknown>;
+        const emailAddr = org.emailAddress as Record<string, string> | undefined;
+        if (emailAddr) {
+          // Microsoft Graph format
+          organizer = { name: emailAddr.name || '', email: emailAddr.address || '' };
+        } else {
+          organizer = {
+            name: String(org.displayName ?? org.name ?? ''),
+            email: String(org.email ?? ''),
+          };
+        }
+      }
+
+      // Attendees — Google uses { email, responseStatus, displayName }
+      // Microsoft uses { emailAddress: { name, address }, status: { response } }
+      let attendees: Array<{ name: string; email: string; status: string }> | undefined;
+      if (Array.isArray(raw.attendees)) {
+        attendees = raw.attendees.map((a: Record<string, unknown>) => {
+          const emailAddr = a.emailAddress as Record<string, string> | undefined;
+          const msStatus = a.status as Record<string, string> | undefined;
+          if (emailAddr) {
+            // Microsoft Graph format
+            return {
+              name: emailAddr.name || '',
+              email: emailAddr.address || '',
+              status: (msStatus?.response ?? 'none') as string,
+            };
+          }
+          return {
+            name: String(a.displayName ?? a.name ?? ''),
+            email: String(a.email ?? ''),
+            status: String(a.responseStatus ?? a.status ?? 'tentative'),
+          };
+        });
+      }
+
+      // Location — Google uses string, Microsoft uses { displayName: "..." }
+      let location: string | undefined;
+      if (typeof raw.location === 'string') {
+        location = raw.location;
+      } else if (raw.location && typeof raw.location === 'object') {
+        location = (raw.location as Record<string, unknown>).displayName as string | undefined;
+      }
+
       return {
         id: `${source.sourceSlug}:${externalId}`,
         sourceSlug: source.sourceSlug,
         externalId,
         title: String(raw.title ?? raw.summary ?? raw.subject ?? 'Untitled'),
-        description: raw.description as string | undefined ?? raw.body as string | undefined,
-        location: raw.location as string | undefined,
+        description: raw.description as string | undefined ?? raw.body as string | undefined
+          ?? raw.bodyPreview as string | undefined,
+        location,
         startTime,
         endTime,
         allDay,
-        organizer: raw.organizer ? {
-          name: String((raw.organizer as Record<string, unknown>).displayName ?? (raw.organizer as Record<string, unknown>).name ?? ''),
-          email: String((raw.organizer as Record<string, unknown>).email ?? ''),
-        } : undefined,
-        attendees: Array.isArray(raw.attendees) ? raw.attendees.map((a: Record<string, unknown>) => ({
-          name: String(a.displayName ?? a.name ?? ''),
-          email: String(a.email ?? ''),
-          status: (a.responseStatus ?? a.status ?? 'tentative') as 'accepted' | 'tentative' | 'declined',
-        })) : undefined,
+        organizer,
+        attendees: attendees as Array<{ name: string; email: string; status: 'accepted' | 'tentative' | 'declined' }> | undefined,
         calendarName: String(raw.calendarName ?? raw.calendar ?? source.sourceSlug),
         calendarColor: raw.calendarColor as string | undefined ?? raw.color as string | undefined,
         meetingUrl: raw.meetingUrl as string | undefined
           ?? raw.hangoutLink as string | undefined
           ?? raw.htmlLink as string | undefined
-          ?? raw.onlineMeetingUrl as string | undefined,
+          ?? raw.onlineMeetingUrl as string | undefined
+          ?? (raw.onlineMeeting as Record<string, unknown> | undefined)?.joinUrl as string | undefined,
       };
     } catch (error) {
       log.debug('Failed to normalize calendar event:', error);
