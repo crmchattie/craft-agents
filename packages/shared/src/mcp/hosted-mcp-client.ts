@@ -90,6 +90,10 @@ export class HostedMcpPoolClient implements PoolClient {
 
     let toolResultContent: string | null = null;
     let toolCallMade = false;
+    let costUsd: number | undefined;
+    let inputTokens: number | undefined;
+    let outputTokens: number | undefined;
+    let cacheReadTokens: number | undefined;
 
     try {
       for await (const msg of conversation) {
@@ -100,6 +104,12 @@ export class HostedMcpPoolClient implements PoolClient {
             if (block.type === 'tool_use' && block.name === fullToolName) {
               toolCallMade = true;
             }
+          }
+          // Capture token usage from the assistant message (available before tool result)
+          if (m.message?.usage) {
+            inputTokens = (inputTokens ?? 0) + (m.message.usage.input_tokens ?? 0);
+            outputTokens = (outputTokens ?? 0) + (m.message.usage.output_tokens ?? 0);
+            cacheReadTokens = (cacheReadTokens ?? 0) + (m.message.usage.cache_read_input_tokens ?? 0);
           }
         }
 
@@ -120,6 +130,14 @@ export class HostedMcpPoolClient implements PoolClient {
             }
           }
         }
+
+        // Capture token usage from result message
+        if (m.type === 'result') {
+          costUsd = m.total_cost_usd;
+          inputTokens = m.usage?.input_tokens;
+          outputTokens = m.usage?.output_tokens;
+          cacheReadTokens = m.usage?.cache_read_input_tokens;
+        }
       }
     } finally {
       try { conversation.close(); } catch { /* ignore */ }
@@ -130,6 +148,10 @@ export class HostedMcpPoolClient implements PoolClient {
     }
 
     debug(`callTool result: ${toolResultContent.substring(0, 200)}...`);
+    if (inputTokens !== undefined || costUsd !== undefined) {
+      const costStr = costUsd !== undefined ? `$${costUsd.toFixed(6)}` : 'unknown';
+      debug(`callTool usage: cost=${costStr} input=${inputTokens ?? '?'} output=${outputTokens ?? '?'} cache_read=${cacheReadTokens ?? 0}`);
+    }
 
     try {
       return JSON.parse(toolResultContent);
