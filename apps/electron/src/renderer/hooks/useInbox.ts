@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import type { InboxMessage } from '@craft-agent/core/types'
+import type { InboxMessage } from '@scrunchy/core/types'
 import { inboxMessagesAtom, inboxSyncingAtom } from '@/atoms/inbox-atoms'
 
 export interface UseInboxResult {

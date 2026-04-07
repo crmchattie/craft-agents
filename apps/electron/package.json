@@ -1,14 +1,14 @@
 {
-  "name": "@craft-agent/electron",
+  "name": "@scrunchy/electron",
   "version": "0.8.3",
-  "description": "Electron desktop app for Craft Agents",
+  "description": "Electron desktop app for Scrunchy",
   "main": "dist/main.cjs",
   "private": true,
   "author": {
-    "name": "Craft Docs Ltd.",
-    "email": "support@craft.do"
+    "name": "ReadyDone, LLC.",
+    "email": "cory@scrunchy.ai"
   },
-  "homepage": "https://agents.craft.do",
+  "homepage": "https://scrunchy.ai",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -36,10 +36,10 @@
     "lint:fix": "eslint src/ --fix"
   },
   "dependencies": {
-    "@craft-agent/core": "workspace:*",
-    "@craft-agent/shared": "workspace:*",
-    "@craft-agent/server-core": "workspace:*",
-    "@craft-agent/ui": "workspace:*",
+    "@scrunchy/core": "workspace:*",
+    "@scrunchy/shared": "workspace:*",
+    "@scrunchy/server-core": "workspace:*",
+    "@scrunchy/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

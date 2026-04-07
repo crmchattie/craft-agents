@@ -76,7 +76,7 @@ export function SkillsListPanel({
           <SkillMenu
             skillSlug={skill.slug}
             skillName={skill.metadata.name}
-            onOpenInNewWindow={() => window.electronAPI.openUrl(`craftagents://skills/skill/${skill.slug}?window=focused`)}
+            onOpenInNewWindow={() => window.electronAPI.openUrl(`scrunchy://skills/skill/${skill.slug}?window=focused`)}
             onShowInFinder={() => {
               if (canRevealLocally) {
                 void window.electronAPI.showInFolder(`${skill.path}/SKILL.md`)

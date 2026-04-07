@@ -5,14 +5,14 @@
  */
 import { execFile } from 'node:child_process'
 import { homedir } from 'node:os'
-import { getAuthState, getSetupNeeds } from '@craft-agent/shared/auth'
-import { isSetupDeferred, setSetupDeferred } from '@craft-agent/shared/config/storage'
-import { getCredentialManager } from '@craft-agent/shared/credentials'
-import { prepareClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState, prepareMcpOAuth } from '@craft-agent/shared/auth'
-import { validateMcpConnection } from '@craft-agent/shared/mcp'
-import { RPC_CHANNELS } from '@craft-agent/shared/protocol'
-import { getClaudeCliPaths, buildClaudeSubprocessEnv } from '@craft-agent/shared/agent/options'
-import type { RpcServer } from '@craft-agent/server-core/transport'
+import { getAuthState, getSetupNeeds } from '@scrunchy/shared/auth'
+import { isSetupDeferred, setSetupDeferred } from '@scrunchy/shared/config/storage'
+import { getCredentialManager } from '@scrunchy/shared/credentials'
+import { prepareClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState, prepareMcpOAuth } from '@scrunchy/shared/auth'
+import { validateMcpConnection } from '@scrunchy/shared/mcp'
+import { RPC_CHANNELS } from '@scrunchy/shared/protocol'
+import { getClaudeCliPaths, buildClaudeSubprocessEnv } from '@scrunchy/shared/agent/options'
+import type { RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from './handlers/handler-deps'
 
 // ============================================

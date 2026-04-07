@@ -3,13 +3,13 @@ import { cn } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SlashCommandMenu, DEFAULT_SLASH_COMMAND_GROUPS, type SlashCommandId } from '@/components/ui/slash-command-menu'
 import { ChevronDown, Info } from 'lucide-react'
-import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@craft-agent/shared/agent/modes'
+import { PERMISSION_MODE_CONFIG, type PermissionMode } from '@scrunchy/shared/agent/modes'
 import type { BackgroundTask } from './ActiveTasksBar'
 import { LabelIcon, LabelValueTypeIcon } from '@/components/ui/label-icon'
 import { LabelValuePopover } from '@/components/ui/label-value-popover'
-import type { LabelConfig } from '@craft-agent/shared/labels'
-import { flattenLabels, parseLabelEntry, formatLabelEntry } from '@craft-agent/shared/labels'
-import { resolveEntityColor } from '@craft-agent/shared/colors'
+import type { LabelConfig } from '@scrunchy/shared/labels'
+import { flattenLabels, parseLabelEntry, formatLabelEntry } from '@scrunchy/shared/labels'
+import { resolveEntityColor } from '@scrunchy/shared/colors'
 import { useTheme } from '@/context/ThemeContext'
 import { useDynamicStack } from '@/hooks/useDynamicStack'
 import type { SessionStatus } from '@/config/session-status-config'
@@ -370,7 +370,7 @@ function StateBadge({
         sideOffset={4}
         onCloseAutoFocus={(e) => {
           e.preventDefault()
-          window.dispatchEvent(new CustomEvent('craft:focus-input', {
+          window.dispatchEvent(new CustomEvent('scrunchy:focus-input', {
             detail: { sessionId }
           }))
         }}
@@ -490,7 +490,7 @@ function PermissionModeDropdown({ permissionMode, onPermissionModeChange, sessio
           // Don't auto-focus the text input on touch devices — it pulls up the virtual keyboard
           const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
           if (!isTouchDevice) {
-            window.dispatchEvent(new CustomEvent('craft:focus-input', {
+            window.dispatchEvent(new CustomEvent('scrunchy:focus-input', {
               detail: { sessionId }
             }))
           }

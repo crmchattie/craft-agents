@@ -4,7 +4,7 @@ import { EntityPanel } from '@/components/ui/entity-panel'
 import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
 import { inboxSelection } from '@/hooks/useEntitySelection'
-import type { InboxMessage } from '@craft-agent/core/types'
+import type { InboxMessage } from '@scrunchy/core/types'
 
 function formatRelativeTime(isoDate: string): string {
   const date = new Date(isoDate)

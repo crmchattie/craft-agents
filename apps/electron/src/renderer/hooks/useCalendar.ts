@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import { calendarEventsAtom, calendarSyncingAtom } from '@/atoms/calendar-atoms'
 
 export interface UseCalendarResult {

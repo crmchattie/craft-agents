@@ -2,11 +2,11 @@
  * RPC handlers for Inbox, Tasks, and Calendar.
  */
 
-import { RPC_CHANNELS } from '@craft-agent/shared/protocol'
-import { getWorkspaceByNameOrId } from '@craft-agent/shared/config'
-import { pushTyped, type RpcServer } from '@craft-agent/server-core/transport'
+import { RPC_CHANNELS } from '@scrunchy/shared/protocol'
+import { getWorkspaceByNameOrId } from '@scrunchy/shared/config'
+import { pushTyped, type RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
-import type { InboxMessage, CalendarEvent, Task, TaskState } from '@craft-agent/core/types'
+import type { InboxMessage, CalendarEvent, Task, TaskState } from '@scrunchy/core/types'
 
 export const HANDLED_CHANNELS = [
   RPC_CHANNELS.inbox.GET_MESSAGES,
@@ -44,7 +44,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inbox.GET_MESSAGES, async (_ctx, workspaceId: string, filter?: { source?: string; channel?: string; actionableOnly?: boolean }) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readMessages } = await import('@craft-agent/shared/inbox')
+    const { readMessages } = await import('@scrunchy/shared/inbox')
     let messages = readMessages(workspace.rootPath)
 
     if (filter?.source) {
@@ -63,20 +63,20 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inbox.GET_MESSAGE, async (_ctx, workspaceId: string, messageId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { getMessageById } = await import('@craft-agent/shared/inbox')
+    const { getMessageById } = await import('@scrunchy/shared/inbox')
     return getMessageById(workspace.rootPath, messageId) ?? null
   })
 
   server.handle(RPC_CHANNELS.inbox.GET_THREAD, async (_ctx, workspaceId: string, threadId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readMessages } = await import('@craft-agent/shared/inbox')
+    const { readMessages } = await import('@scrunchy/shared/inbox')
     return readMessages(workspace.rootPath).filter(m => m.threadId === threadId)
   })
 
   server.handle(RPC_CHANNELS.inbox.MARK_READ, async (_ctx, workspaceId: string, messageId: string) => {
     log.debug(`[inbox-rpc] MARK_READ: messageId=${messageId}`)
     const workspace = resolveWorkspace(workspaceId)
-    const { readMessages, rewriteMessages } = await import('@craft-agent/shared/inbox')
+    const { readMessages, rewriteMessages } = await import('@scrunchy/shared/inbox')
     const messages = readMessages(workspace.rootPath)
     const msg = messages.find(m => m.id === messageId)
     if (msg) {
@@ -100,20 +100,20 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inbox.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readSyncState } = await import('@craft-agent/shared/inbox')
+    const { readSyncState } = await import('@scrunchy/shared/inbox')
     return readSyncState(workspace.rootPath)
   })
 
   server.handle(RPC_CHANNELS.inbox.GET_CONFIG, async (_ctx, workspaceId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { loadInboxConfig } = await import('@craft-agent/shared/inbox')
+    const { loadInboxConfig } = await import('@scrunchy/shared/inbox')
     return loadInboxConfig(workspace.rootPath)
   })
 
-  server.handle(RPC_CHANNELS.inbox.UPDATE_CONFIG, async (_ctx, workspaceId: string, config: import('@craft-agent/shared/inbox').InboxConfig) => {
+  server.handle(RPC_CHANNELS.inbox.UPDATE_CONFIG, async (_ctx, workspaceId: string, config: import('@scrunchy/shared/inbox').InboxConfig) => {
     log.info(`[inbox-rpc] Inbox config updated for workspace ${workspaceId}`)
     const workspace = resolveWorkspace(workspaceId)
-    const { saveInboxConfig } = await import('@craft-agent/shared/inbox')
+    const { saveInboxConfig } = await import('@scrunchy/shared/inbox')
     saveInboxConfig(workspace.rootPath, config)
   })
 
@@ -123,7 +123,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inboxTasks.GET_ALL, async (_ctx, workspaceId: string, filter?: { state?: TaskState }) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readTasks } = await import('@craft-agent/shared/inbox')
+    const { readTasks } = await import('@scrunchy/shared/inbox')
     let tasks = readTasks(workspace.rootPath)
     if (filter?.state) {
       tasks = tasks.filter(t => t.state === filter.state)
@@ -133,13 +133,13 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inboxTasks.GET, async (_ctx, workspaceId: string, taskId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readTasks } = await import('@craft-agent/shared/inbox')
+    const { readTasks } = await import('@scrunchy/shared/inbox')
     return readTasks(workspace.rootPath).find(t => t.id === taskId) ?? null
   })
 
   server.handle(RPC_CHANNELS.inboxTasks.CREATE, async (_ctx, workspaceId: string, task: Task) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { createTask } = await import('@craft-agent/shared/inbox')
+    const { createTask } = await import('@scrunchy/shared/inbox')
     const created = createTask(workspace.rootPath, task)
     pushTyped(server, RPC_CHANNELS.inboxTasks.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
     return created
@@ -147,7 +147,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inboxTasks.UPDATE, async (_ctx, workspaceId: string, taskId: string, patch: Partial<Task>) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { updateTask } = await import('@craft-agent/shared/inbox')
+    const { updateTask } = await import('@scrunchy/shared/inbox')
     const updated = updateTask(workspace.rootPath, taskId, patch)
     if (updated) {
       pushTyped(server, RPC_CHANNELS.inboxTasks.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
@@ -157,7 +157,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inboxTasks.DELETE, async (_ctx, workspaceId: string, taskId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { deleteTask } = await import('@craft-agent/shared/inbox')
+    const { deleteTask } = await import('@scrunchy/shared/inbox')
     const deleted = deleteTask(workspace.rootPath, taskId)
     if (deleted) {
       pushTyped(server, RPC_CHANNELS.inboxTasks.CHANGED, { to: 'workspace', workspaceId }, workspaceId)
@@ -167,7 +167,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.inboxTasks.START_SESSION, async (_ctx, workspaceId: string, taskId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readTasks } = await import('@craft-agent/shared/inbox')
+    const { readTasks } = await import('@scrunchy/shared/inbox')
     const task = readTasks(workspace.rootPath).find(t => t.id === taskId)
     if (!task) throw new Error(`Task ${taskId} not found`)
 
@@ -186,7 +186,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.calendar.GET_EVENTS, async (_ctx, workspaceId: string, range?: { start?: string; end?: string }) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readEvents } = await import('@craft-agent/shared/inbox')
+    const { readEvents } = await import('@scrunchy/shared/inbox')
     let events = readEvents(workspace.rootPath)
 
     if (range?.start) {
@@ -202,7 +202,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.calendar.GET_EVENT, async (_ctx, workspaceId: string, eventId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readEvents } = await import('@craft-agent/shared/inbox')
+    const { readEvents } = await import('@scrunchy/shared/inbox')
     return readEvents(workspace.rootPath).find(e => e.id === eventId) ?? null
   })
 
@@ -219,7 +219,7 @@ export function registerInboxHandlers(server: RpcServer, deps: HandlerDeps): voi
 
   server.handle(RPC_CHANNELS.calendar.GET_SYNC_STATUS, async (_ctx, workspaceId: string) => {
     const workspace = resolveWorkspace(workspaceId)
-    const { readSyncState } = await import('@craft-agent/shared/inbox')
+    const { readSyncState } = await import('@scrunchy/shared/inbox')
     return readSyncState(workspace.rootPath)
   })
 }

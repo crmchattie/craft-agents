@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Task, TriagePriority } from '@craft-agent/core/types'
+import type { Task, TriagePriority } from '@scrunchy/core/types'
 
 interface AddTaskDialogProps {
   onAdd: (task: Task) => void

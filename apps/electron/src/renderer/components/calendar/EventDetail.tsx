@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Info_Badge } from '@/components/info'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import { format } from 'date-fns'
 
 interface EventDetailProps {

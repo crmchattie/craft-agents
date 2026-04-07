@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Info_Badge } from '@/components/info'
-import type { Task, TaskState, InboxMessage } from '@craft-agent/core/types'
+import type { Task, TaskState, InboxMessage } from '@scrunchy/core/types'
 import { cn } from '@/lib/utils'
 import { navigate, routes } from '@/lib/navigate'
 

@@ -28,8 +28,8 @@ import {
 } from '../../config/validators.ts';
 import {
   CLI_DOMAIN_POLICIES,
-  CRAFT_AGENTS_CLI_BASH_GUARD_SCOPE_ENTRIES,
-  CRAFT_AGENTS_CLI_WORKSPACE_SCOPE_ENTRIES,
+  SCRUNCHY_CLI_BASH_GUARD_SCOPE_ENTRIES,
+  SCRUNCHY_CLI_WORKSPACE_SCOPE_ENTRIES,
   type CliDomainNamespace,
 } from '../../config/cli-domains.ts';
 import { FEATURE_FLAGS } from '../../feature-flags.ts';
@@ -221,7 +221,7 @@ export function qualifySkillName(
   const skill = input.skill as string | undefined;
   if (!skill) return { modified: false, input };
 
-  // Extract the bare slug — strip any existing qualifier (e.g. "CraftAgentWS:commit" → "commit")
+  // Extract the bare slug — strip any existing qualifier (e.g. "ScrunchyWS:commit" → "commit")
   const bareSlug = skill.includes(':') ? skill.split(':').pop()! : skill;
   if (!bareSlug) return { modified: false, input };
 
@@ -420,7 +420,7 @@ function buildCliDomainBlockMessage(namespace: CliDomainNamespace, context: stri
 
   return [
     `${context}`,
-    `Use \`craft-agent ${namespace} ...\` instead.`,
+    `Use \`scrunchy ${namespace} ...\` instead.`,
     `Run \`${policy.helpCommand}\` for the full ${noun} command reference.`,
     '',
     quickExamplesHeading,
@@ -485,7 +485,7 @@ export function getConfigCliRedirect(
   if (filePath && LABELS_BLOCKED_FILE_TOOLS.has(toolName)) {
     const relativePath = getWorkspaceRelativePath(filePath, workspaceRootPath, workingDirectory)
     if (relativePath) {
-      const labelsScopeMatch = CRAFT_AGENTS_CLI_WORKSPACE_SCOPE_ENTRIES.find(
+      const labelsScopeMatch = SCRUNCHY_CLI_WORKSPACE_SCOPE_ENTRIES.find(
         entry => entry.namespace === 'label' && matchesPathScope(relativePath, entry.scope)
       )
       if (labelsScopeMatch) {
@@ -518,7 +518,7 @@ export function getConfigCliRedirect(
 }
 
 /**
- * Block bash commands that operate on guarded config paths unless they use craft-agent commands.
+ * Block bash commands that operate on guarded config paths unless they use scrunchy commands.
  * Current guarded domains in Bash are declared in shared CLI domain policy.
  */
 export function getConfigDomainBashRedirect(
@@ -529,7 +529,7 @@ export function getConfigDomainBashRedirect(
   const command = typeof input.command === 'string' ? input.command.trim() : '';
   if (!command) return null;
 
-  if (/^craft-agent\s+(label|automation|source|skill)\b/.test(command)) {
+  if (/^scrunchy\s+(label|automation|source|skill)\b/.test(command)) {
     return null;
   }
 
@@ -546,7 +546,7 @@ export function getConfigDomainBashRedirect(
     candidates.push(candidate);
   }
 
-  const bashGuardEntries: Array<{ namespace: CliDomainNamespace; scope: string }> = CRAFT_AGENTS_CLI_BASH_GUARD_SCOPE_ENTRIES
+  const bashGuardEntries: Array<{ namespace: CliDomainNamespace; scope: string }> = SCRUNCHY_CLI_BASH_GUARD_SCOPE_ENTRIES
 
   for (const candidate of candidates) {
     const relativePath = getWorkspaceRelativePath(candidate, workspaceRootPath, baseDir);
@@ -658,7 +658,7 @@ export interface PrerequisiteManagerLike {
 }
 
 /** Built-in MCP servers that are always available (not user sources) */
-const BUILT_IN_MCP_SERVERS = new Set(['session', 'craft-agents-docs']);
+const BUILT_IN_MCP_SERVERS = new Set(['session', 'scrunchy-docs']);
 
 /** Prefix for Anthropic-hosted MCP servers (Gmail, Google Calendar, etc.) injected by the SDK */
 const CLAUDE_AI_MCP_PREFIX = 'claude_ai_';
@@ -807,8 +807,8 @@ export function runPreToolUseChecks(ctx: PreToolUseInput): PreToolUseCheckResult
     wasModified = true;
   }
 
-  // 5b. Config-domain Bash guard (block direct labels/automations path operations unless using craft-agent)
-  if (FEATURE_FLAGS.craftAgentsCli && toolName === 'Bash') {
+  // 5b. Config-domain Bash guard (block direct labels/automations path operations unless using scrunchy)
+  if (FEATURE_FLAGS.scrunchyCli && toolName === 'Bash') {
     const configDomainBashRedirect = getConfigDomainBashRedirect(currentInput, workspaceRootPath, workingDirectory);
     if (configDomainBashRedirect) {
       return { type: 'block', reason: configDomainBashRedirect.message };
@@ -822,7 +822,7 @@ export function runPreToolUseChecks(ctx: PreToolUseInput): PreToolUseCheckResult
   }
 
   // 5d. Config file CLI redirect (labels + automations)
-  if (FEATURE_FLAGS.craftAgentsCli) {
+  if (FEATURE_FLAGS.scrunchyCli) {
     const cliRedirect = getConfigCliRedirect(toolName, currentInput, workspaceRootPath, workingDirectory);
     if (cliRedirect) {
       return { type: 'block', reason: cliRedirect.message };

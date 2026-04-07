@@ -1,11 +1,11 @@
 {
-  "name": "@craft-agent/server",
+  "name": "@scrunchy/server",
   "version": "0.8.3",
-  "description": "Standalone headless Craft Agent server (Bun runtime)",
+  "description": "Standalone headless Scrunchy server (Bun runtime)",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "craft-server": "src/index.ts"
+    "scrunchy-server": "src/index.ts"
   },
   "files": [
     "src/"
@@ -14,20 +14,20 @@
     "bun": ">=1.0.0"
   },
   "author": {
-    "name": "Craft Docs Ltd.",
-    "email": "support@craft.do"
+    "name": "ReadyDone, LLC.",
+    "email": "cory@scrunchy.ai"
   },
   "license": "Apache-2.0",
-  "homepage": "https://agents.craft.do",
+  "homepage": "https://scrunchy.ai",
   "scripts": {
     "start": "bun run src/index.ts",
     "generate-token": "bun run src/index.ts --generate-token",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@craft-agent/core": "workspace:*",
-    "@craft-agent/server-core": "workspace:*",
-    "@craft-agent/shared": "workspace:*"
+    "@scrunchy/core": "workspace:*",
+    "@scrunchy/server-core": "workspace:*",
+    "@scrunchy/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.2",

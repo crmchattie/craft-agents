@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import type { Task, TaskState } from '@craft-agent/core/types'
+import type { Task, TaskState } from '@scrunchy/core/types'
 import { tasksAtom } from '@/atoms/task-atoms'
 
 export interface UseTasksResult {

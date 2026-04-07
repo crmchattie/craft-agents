@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, ren
 import { join, dirname } from 'path';
 import { readJsonFileSync, atomicWriteFileSync } from '../utils/files.ts';
 import { createLogger } from '../utils/debug.ts';
-import type { InboxMessage, CalendarEvent, Task } from '@craft-agent/core/types';
+import type { InboxMessage, CalendarEvent, Task } from '@scrunchy/core/types';
 
 const log = createLogger('inbox-storage');
 

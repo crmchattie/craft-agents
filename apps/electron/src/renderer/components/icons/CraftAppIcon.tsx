@@ -1,21 +1,24 @@
-import craftLogo from "@/assets/craft_logo_c.svg"
+import scrunchyLogo from "@/assets/scrunchy_logo_s.svg"
 
-interface CraftAppIconProps {
+interface ScrunchyAppIconProps {
   className?: string
   size?: number
 }
 
 /**
- * CraftAppIcon - Displays the Craft logo (colorful "C" icon)
+ * ScrunchyAppIcon - Displays the Scrunchy logo ("S" icon)
  */
-export function CraftAppIcon({ className, size = 64 }: CraftAppIconProps) {
+export function ScrunchyAppIcon({ className, size = 64 }: ScrunchyAppIconProps) {
   return (
     <img
-      src={craftLogo}
-      alt="Craft"
+      src={scrunchyLogo}
+      alt="Scrunchy"
       width={size}
       height={size}
       className={className}
     />
   )
 }
+
+// Legacy alias
+export { ScrunchyAppIcon as CraftAppIcon }

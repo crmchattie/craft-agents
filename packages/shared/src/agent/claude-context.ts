@@ -25,7 +25,7 @@ import type {
   ApiTestResult,
   SourceConfig,
   DeveloperFeedback,
-} from '@craft-agent/session-tools-core';
+} from '@scrunchy/session-tools-core';
 import {
   validateConfig,
   validateSource,
@@ -70,7 +70,7 @@ import { getSessionPlansPath, getSessionPath, getSessionDataPath } from '../sess
 import { updatePreferences as updatePreferencesImpl } from '../config/preferences.ts';
 
 // Re-export types that may be needed by consumers
-export type { SessionToolContext, SessionToolCallbacks } from '@craft-agent/session-tools-core';
+export type { SessionToolContext, SessionToolCallbacks } from '@scrunchy/session-tools-core';
 
 /**
  * Options for creating a Claude context
@@ -84,10 +84,10 @@ export interface ClaudeContextOptions {
   // Session self-management callbacks (optional — injected by backend)
   setSessionLabels?: (sessionId: string | undefined, labels: string[]) => void | Promise<void>;
   setSessionStatus?: (sessionId: string | undefined, status: string) => void | Promise<void>;
-  getSessionInfo?: (sessionId?: string) => import('@craft-agent/session-tools-core').SessionInfo | null;
-  listSessions?: (options?: import('@craft-agent/session-tools-core').ListSessionsOptions) => import('@craft-agent/session-tools-core').ListSessionsResult;
-  resolveLabels?: (labels: string[]) => import('@craft-agent/session-tools-core').ResolvedLabelsResult;
-  resolveStatus?: (status: string) => import('@craft-agent/session-tools-core').ResolvedStatusResult;
+  getSessionInfo?: (sessionId?: string) => import('@scrunchy/session-tools-core').SessionInfo | null;
+  listSessions?: (options?: import('@scrunchy/session-tools-core').ListSessionsOptions) => import('@scrunchy/session-tools-core').ListSessionsResult;
+  resolveLabels?: (labels: string[]) => import('@scrunchy/session-tools-core').ResolvedLabelsResult;
+  resolveStatus?: (status: string) => import('@scrunchy/session-tools-core').ResolvedStatusResult;
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { PreparedOAuthFlow } from './oauth-flow-types.ts';
 
-export const OAUTH_RELAY_CALLBACK_URL = 'https://agents.craft.do/auth/callback';
+// OAuth relay hosted by Craft Agents (upstream) — handles HTTPS redirect back to localhost
+export const OAUTH_RELAY_CALLBACK_URL = process.env.SCRUNCHY_OAUTH_RELAY_URL ?? 'https://agents.craft.do/auth/callback';
 const OAUTH_RELAY_STATE_PREFIX = 'ca1.';
 const OAUTH_RELAY_STATE_VERSION = 1;
 

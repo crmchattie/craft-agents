@@ -502,12 +502,25 @@ export class CredentialManager {
 
   /**
    * Check if connection has valid OAuth credential.
+   * For Anthropic providers, also checks if the Claude Code CLI has a valid session
+   * (the SDK subprocess uses native keychain auth, not the app's credential store).
    * @internal
    */
   private async hasLlmOAuthCredential(
     connectionSlug: string,
     providerType?: LlmProviderType
   ): Promise<boolean> {
+    // Anthropic OAuth: check Claude Code CLI's native keychain auth first.
+    // The SDK subprocess uses its own session, so the app's credential store may be empty.
+    if (providerType === 'anthropic') {
+      try {
+        const { hasClaudeCodeCliAuth } = await import('../auth/state.ts');
+        if (hasClaudeCodeCliAuth()) return true;
+      } catch {
+        // Fall through to credential store check
+      }
+    }
+
     const oauth = await this.getLlmOAuth(connectionSlug);
     if (!oauth) return false;
 

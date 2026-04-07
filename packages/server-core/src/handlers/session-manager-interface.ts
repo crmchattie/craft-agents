@@ -6,11 +6,11 @@
  * satisfy it at runtime.
  */
 
-import type { Workspace, WorkspaceInfo, ActiveSessionInfo } from '@craft-agent/core/types'
-import type { StoredAttachment, AnnotationV1 } from '@craft-agent/core/types'
-import type { PermissionMode } from '@craft-agent/shared/agent/mode-types'
-import type { ThinkingLevel } from '@craft-agent/shared/agent/thinking-levels'
-import type { AuthResult } from '@craft-agent/shared/agent'
+import type { Workspace, WorkspaceInfo, ActiveSessionInfo } from '@scrunchy/core/types'
+import type { StoredAttachment, AnnotationV1 } from '@scrunchy/core/types'
+import type { PermissionMode } from '@scrunchy/shared/agent/mode-types'
+import type { ThinkingLevel } from '@scrunchy/shared/agent/thinking-levels'
+import type { AuthResult } from '@scrunchy/shared/agent'
 import type {
   Session,
   SessionStatus,
@@ -22,8 +22,8 @@ import type {
   PermissionModeState,
   UnreadSummary,
   ShareResult,
-} from '@craft-agent/shared/protocol'
-import type { SessionBundle, DispatchMode } from '@craft-agent/shared/sessions'
+} from '@scrunchy/shared/protocol'
+import type { SessionBundle, DispatchMode } from '@scrunchy/shared/sessions'
 import type { EventSink } from '../transport'
 
 export interface ISessionManager {
@@ -36,7 +36,7 @@ export interface ISessionManager {
   cleanup(): void
   setEventSink(sink: EventSink): void
   flushAllSessions(): Promise<void>
-  getInboxSyncHandler(workspaceRootPath: string): import('@craft-agent/shared/inbox').InboxSyncHandler | undefined
+  getInboxSyncHandler(workspaceRootPath: string): import('@scrunchy/shared/inbox').InboxSyncHandler | undefined
 
   // ---------------------------------------------------------------------------
   // Session CRUD
@@ -148,7 +148,7 @@ export interface ISessionManager {
   exportRemoteSessionTransfer(
     sessionId: string,
     workspaceId: string,
-  ): Promise<import('@craft-agent/shared/protocol').RemoteSessionTransferPayload | null>
+  ): Promise<import('@scrunchy/shared/protocol').RemoteSessionTransferPayload | null>
 
   /**
    * Import a session bundle into a target workspace.
@@ -166,8 +166,8 @@ export interface ISessionManager {
    */
   importRemoteSessionTransfer(
     workspaceId: string,
-    payload: import('@craft-agent/shared/protocol').RemoteSessionTransferPayload,
-  ): Promise<import('@craft-agent/shared/protocol').ImportRemoteSessionTransferResult>
+    payload: import('@scrunchy/shared/protocol').RemoteSessionTransferPayload,
+  ): Promise<import('@scrunchy/shared/protocol').ImportRemoteSessionTransferResult>
 
   // ---------------------------------------------------------------------------
   // Utilities

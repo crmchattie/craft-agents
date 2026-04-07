@@ -14,7 +14,7 @@
 
 import { createLogger } from '../utils/debug.ts';
 import type { AppEvent, AgentEvent, AutomationEvent } from './types.ts';
-import type { Task } from '@craft-agent/core/types';
+import type { Task } from '@scrunchy/core/types';
 
 const log = createLogger('event-bus');
 

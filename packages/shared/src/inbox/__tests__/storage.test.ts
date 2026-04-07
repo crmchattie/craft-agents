@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { InboxMessage, CalendarEvent, Task } from '@craft-agent/core/types';
+import type { InboxMessage, CalendarEvent, Task } from '@scrunchy/core/types';
 import {
   ensureInboxDir,
   getInboxDir,

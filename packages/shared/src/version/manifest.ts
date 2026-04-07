@@ -1,6 +1,7 @@
 import { debug } from "../utils/debug";
 
-const VERSIONS_URL = 'https://agents.craft.do/electron';
+// TODO: Host your own version manifest endpoint
+const VERSIONS_URL = '';
 
 export async function getLatestVersion(): Promise<string | null> {
     try {

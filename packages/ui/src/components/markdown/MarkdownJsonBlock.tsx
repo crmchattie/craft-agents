@@ -24,13 +24,13 @@ import { CodeBlock } from './CodeBlock'
 // Transparent background so the container's bg-muted/30 shows through,
 // and CSS variable font so it matches the app's monospace font.
 
-const craftAgentDarkTheme = {
+const scrunchyDarkTheme = {
   ...vscodeTheme,
   '--w-rjv-font-family': 'var(--font-mono, ui-monospace, monospace)',
   '--w-rjv-background-color': 'transparent',
 }
 
-const craftAgentLightTheme = {
+const scrunchyLightTheme = {
   ...githubLightTheme,
   '--w-rjv-font-family': 'var(--font-mono, ui-monospace, monospace)',
   '--w-rjv-background-color': 'transparent',
@@ -146,7 +146,7 @@ export function MarkdownJsonBlock({ code, className }: MarkdownJsonBlockProps) {
   }
 
   const dark = isDarkMode()
-  const jsonTheme = dark ? craftAgentDarkTheme : craftAgentLightTheme
+  const jsonTheme = dark ? scrunchyDarkTheme : scrunchyLightTheme
   const fallback = <CodeBlock code={code} language="json" mode="full" className={className} />
 
   return (

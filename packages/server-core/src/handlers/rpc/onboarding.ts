@@ -5,14 +5,14 @@
  */
 import { execFile } from 'node:child_process'
 import { homedir } from 'node:os'
-import { getAuthState, getSetupNeeds } from '@craft-agent/shared/auth'
-import { getCredentialManager } from '@craft-agent/shared/credentials'
-import { setSetupDeferred } from '@craft-agent/shared/config'
-import { prepareClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState, prepareMcpOAuth } from '@craft-agent/shared/auth'
-import { validateMcpConnection } from '@craft-agent/shared/mcp'
-import { RPC_CHANNELS } from '@craft-agent/shared/protocol'
-import { getClaudeCliPaths, buildClaudeSubprocessEnv } from '@craft-agent/shared/agent/options'
-import type { RpcServer } from '@craft-agent/server-core/transport'
+import { getAuthState, getSetupNeeds } from '@scrunchy/shared/auth'
+import { getCredentialManager } from '@scrunchy/shared/credentials'
+import { setSetupDeferred } from '@scrunchy/shared/config'
+import { prepareClaudeOAuth, exchangeClaudeCode, hasValidOAuthState, clearOAuthState, prepareMcpOAuth } from '@scrunchy/shared/auth'
+import { validateMcpConnection } from '@scrunchy/shared/mcp'
+import { RPC_CHANNELS } from '@scrunchy/shared/protocol'
+import { getClaudeCliPaths, buildClaudeSubprocessEnv } from '@scrunchy/shared/agent/options'
+import type { RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
 
 // ============================================
@@ -198,6 +198,10 @@ export function registerOnboardingHandlers(server: RpcServer, deps: HandlerDeps)
 
       if (status.loggedIn) {
         log.info(`[Onboarding] Claude Code auth success: ${status.email} (${status.subscriptionType})`)
+        // Clear hosted MCP discovery cache so inbox/calendar sync can discover
+        // newly available servers (Gmail, Google Calendar, etc.)
+        const { clearHostedMcpCache } = await import('@scrunchy/shared/mcp/hosted-mcp-discovery')
+        clearHostedMcpCache()
         return { success: true, ...status }
       } else {
         return { success: false, loggedIn: false, error: 'Login was not completed' }

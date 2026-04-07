@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Bot, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Info_Badge } from '@/components/info'
-import type { MessageTriage } from '@craft-agent/core/types'
+import type { MessageTriage } from '@scrunchy/core/types'
 
 interface TriageCardProps {
   triage: MessageTriage

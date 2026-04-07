@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
-import type { RpcServer } from '@craft-agent/server-core/transport'
+import type { RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
 
 const registeredChannels: string[] = []
@@ -101,20 +101,20 @@ async function getExpectedCoreChannels(): Promise<Set<string>> {
     workspace,
     onboarding,
   ] = await Promise.all([
-    import('@craft-agent/server-core/handlers/rpc/auth'),
-    import('@craft-agent/server-core/handlers/rpc/automations'),
-    import('@craft-agent/server-core/handlers/rpc/files'),
-    import('@craft-agent/server-core/handlers/rpc/labels'),
-    import('@craft-agent/server-core/handlers/rpc/llm-connections'),
-    import('@craft-agent/server-core/handlers/rpc/oauth'),
-    import('@craft-agent/server-core/handlers/rpc/sessions'),
-    import('@craft-agent/server-core/handlers/rpc/settings'),
-    import('@craft-agent/server-core/handlers/rpc/skills'),
-    import('@craft-agent/server-core/handlers/rpc/sources'),
-    import('@craft-agent/server-core/handlers/rpc/statuses'),
-    import('@craft-agent/server-core/handlers/rpc/system'),
-    import('@craft-agent/server-core/handlers/rpc/workspace'),
-    import('@craft-agent/server-core/handlers/rpc/onboarding'),
+    import('@scrunchy/server-core/handlers/rpc/auth'),
+    import('@scrunchy/server-core/handlers/rpc/automations'),
+    import('@scrunchy/server-core/handlers/rpc/files'),
+    import('@scrunchy/server-core/handlers/rpc/labels'),
+    import('@scrunchy/server-core/handlers/rpc/llm-connections'),
+    import('@scrunchy/server-core/handlers/rpc/oauth'),
+    import('@scrunchy/server-core/handlers/rpc/sessions'),
+    import('@scrunchy/server-core/handlers/rpc/settings'),
+    import('@scrunchy/server-core/handlers/rpc/skills'),
+    import('@scrunchy/server-core/handlers/rpc/sources'),
+    import('@scrunchy/server-core/handlers/rpc/statuses'),
+    import('@scrunchy/server-core/handlers/rpc/system'),
+    import('@scrunchy/server-core/handlers/rpc/workspace'),
+    import('@scrunchy/server-core/handlers/rpc/onboarding'),
   ])
 
   return new Set([

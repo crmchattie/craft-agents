@@ -1,7 +1,7 @@
 /**
  * Secure Storage Backend
  *
- * Stores credentials in an encrypted file at ~/.craft-agent/credentials.enc
+ * Stores credentials in an encrypted file at ~/.scrunchy/credentials.enc
  * Uses AES-256-GCM for authenticated encryption.
  *
  * Encryption key is derived from OS-native hardware UUID using PBKDF2:
@@ -40,8 +40,9 @@ import type { CredentialBackend } from './types.ts';
 import type { CredentialId, StoredCredential } from '../types.ts';
 import { credentialIdToAccount, accountToCredentialId } from '../types.ts';
 
-// File location
-const CREDENTIALS_DIR = join(homedir(), '.craft-agent');
+// File location — uses centralized CONFIG_DIR which handles migration from ~/.craft-agent
+import { CONFIG_DIR } from '../../config/paths.ts';
+const CREDENTIALS_DIR = CONFIG_DIR;
 const CREDENTIALS_FILE = join(CREDENTIALS_DIR, 'credentials.enc');
 
 // File format constants
@@ -311,7 +312,7 @@ export class SecureStorageBackend implements CredentialBackend {
     // This is far more stable than hostname which can change with network/DHCP
     const stableMachineId = createHash('sha256')
       .update(getStableMachineId())
-      .update('craft-agent-v2') // Bumped version for new key derivation
+      .update('scrunchy-v2') // Bumped version for new key derivation
       .digest();
 
     // Derive key using PBKDF2
@@ -329,7 +330,7 @@ export class SecureStorageBackend implements CredentialBackend {
       .update(hostname())
       .update(userInfo().username)
       .update(homedir())
-      .update('craft-agent-v1')
+      .update('scrunchy-v1')
       .digest();
 
     return pbkdf2Sync(legacyMachineId, salt, PBKDF2_ITERATIONS, KEY_SIZE, 'sha256');

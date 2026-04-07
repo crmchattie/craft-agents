@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Bot } from 'lucide-react'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 

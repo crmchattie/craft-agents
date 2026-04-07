@@ -16,7 +16,7 @@ import { Calendar } from './calendar'
 import { cn } from '@/lib/utils'
 import { parseDate } from 'chrono-node'
 import { format, parse } from 'date-fns'
-import type { LabelConfig } from '@craft-agent/shared/labels'
+import type { LabelConfig } from '@scrunchy/shared/labels'
 
 export interface LabelValuePopoverProps {
   /** Label configuration (color, name, valueType) */
@@ -88,7 +88,7 @@ export function LabelValuePopover({
    *  Matches the pattern used in ActiveOptionBadges. */
   const handleCloseAutoFocus = React.useCallback((e: Event) => {
     e.preventDefault()
-    window.dispatchEvent(new CustomEvent('craft:focus-input', {
+    window.dispatchEvent(new CustomEvent('scrunchy:focus-input', {
       detail: { sessionId }
     }))
   }, [sessionId])

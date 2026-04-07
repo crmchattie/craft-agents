@@ -11,8 +11,8 @@ import {
   REQUEST_TIMEOUT_MS,
   SEQUENCE_ACK_INTERVAL_MS,
   type MessageEnvelope,
-} from '@craft-agent/shared/protocol'
-import type { RpcClient } from '@craft-agent/server-core/transport'
+} from '@scrunchy/shared/protocol'
+import type { RpcClient } from '@scrunchy/server-core/transport'
 import { serializeEnvelope, deserializeEnvelope } from './codec'
 
 // ---------------------------------------------------------------------------

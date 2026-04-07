@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 
 export const calendarEventsAtom = atom<CalendarEvent[]>([])
 export const calendarViewAtom = atom<'day' | 'week' | 'month'>('week')

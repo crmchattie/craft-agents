@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, mock, beforeEach } from 'bun:test'
 import {
   serializeEnvelope,
   deserializeEnvelope,
-} from '@craft-agent/server-core/transport'
+} from '@scrunchy/server-core/transport'
 import type { SpawnedServer } from './server-spawner.ts'
 
 // ---------------------------------------------------------------------------
@@ -350,7 +350,7 @@ describe('run command', () => {
     // Session is created with the bootstrapped workspace ID
     await client.invoke('sessions:create', ws.id, {
       permissionMode: 'allow-all',
-      enabledSourceSlugs: ['craft-public'],
+      enabledSourceSlugs: ['scrunchy-public'],
     })
 
     expect(mockWsServer!.invokedChannels).toEqual([

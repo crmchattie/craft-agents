@@ -1,13 +1,13 @@
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { RPC_CHANNELS } from '@craft-agent/shared/protocol'
-import { getWorkspaceByNameOrId } from '@craft-agent/shared/config'
-import { appendAutomationHistoryEntry } from '@craft-agent/shared/automations/history-store'
-import { AUTOMATION_HISTORY_MAX_RUNS_PER_MATCHER } from '@craft-agent/shared/automations/constants'
-import type { RpcServer } from '@craft-agent/server-core/transport'
+import { RPC_CHANNELS } from '@scrunchy/shared/protocol'
+import { getWorkspaceByNameOrId } from '@scrunchy/shared/config'
+import { appendAutomationHistoryEntry } from '@scrunchy/shared/automations/history-store'
+import { AUTOMATION_HISTORY_MAX_RUNS_PER_MATCHER } from '@scrunchy/shared/automations/constants'
+import type { RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
 
-// History file name — matches AUTOMATIONS_HISTORY_FILE from @craft-agent/shared/automations/constants
+// History file name — matches AUTOMATIONS_HISTORY_FILE from @scrunchy/shared/automations/constants
 const HISTORY_FILE = 'automations-history.jsonl'
 interface HistoryEntry { id: string; ts: number; ok: boolean; sessionId?: string; prompt?: string; error?: string; webhook?: { method: string; url: string; statusCode: number; durationMs: number; attempts?: number; error?: string; responseBody?: string } }
 
@@ -28,7 +28,7 @@ async function withAutomationMatcher(workspaceId: string, eventName: string, mat
   if (!workspace) throw new Error('Workspace not found')
 
   await withConfigMutex(workspace.rootPath, async () => {
-    const { resolveAutomationsConfigPath, generateShortId } = await import('@craft-agent/shared/automations/resolve-config-path')
+    const { resolveAutomationsConfigPath, generateShortId } = await import('@scrunchy/shared/automations/resolve-config-path')
     const configPath = resolveAutomationsConfigPath(workspace.rootPath)
 
     const raw = await readFile(configPath, 'utf-8')
@@ -67,13 +67,13 @@ export const HANDLED_CHANNELS = [
 export function registerAutomationsHandlers(server: RpcServer, deps: HandlerDeps): void {
   const log = deps.platform.logger
 
-  server.handle(RPC_CHANNELS.automations.TEST, async (_ctx, payload: import('@craft-agent/shared/protocol').TestAutomationPayload) => {
+  server.handle(RPC_CHANNELS.automations.TEST, async (_ctx, payload: import('@scrunchy/shared/protocol').TestAutomationPayload) => {
     const workspace = getWorkspaceByNameOrId(payload.workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const results: import('@craft-agent/shared/protocol').TestAutomationActionResult[] = []
-    const { parsePromptReferences } = await import('@craft-agent/shared/automations')
-    const { executeWebhookRequest, createWebhookHistoryEntry, createPromptHistoryEntry } = await import('@craft-agent/shared/automations/webhook-utils')
+    const results: import('@scrunchy/shared/protocol').TestAutomationActionResult[] = []
+    const { parsePromptReferences } = await import('@scrunchy/shared/automations')
+    const { executeWebhookRequest, createWebhookHistoryEntry, createPromptHistoryEntry } = await import('@scrunchy/shared/automations/webhook-utils')
 
     for (const action of payload.actions) {
       const start = Date.now()
@@ -81,7 +81,7 @@ export function registerAutomationsHandlers(server: RpcServer, deps: HandlerDeps
       if (action.type === 'webhook') {
         // Execute webhook action using shared utility (no env expansion for test — raw URLs)
         // Cast needed: protocol DTO uses loose `method?: string`, WebhookAction uses strict union
-        const result = await executeWebhookRequest(action as import('@craft-agent/shared/automations').WebhookAction)
+        const result = await executeWebhookRequest(action as import('@scrunchy/shared/automations').WebhookAction)
         const method = action.method ?? 'POST'
 
         results.push({
@@ -161,7 +161,7 @@ export function registerAutomationsHandlers(server: RpcServer, deps: HandlerDeps
       }
     }
 
-    return { actions: results } satisfies import('@craft-agent/shared/protocol').TestAutomationResult
+    return { actions: results } satisfies import('@scrunchy/shared/protocol').TestAutomationResult
   })
 
   // Automation enabled state management (toggle enabled/disabled in automations.json)
@@ -222,7 +222,7 @@ export function registerAutomationsHandlers(server: RpcServer, deps: HandlerDeps
     const workspace = getWorkspaceByNameOrId(workspaceId)
     if (!workspace) throw new Error('Workspace not found')
 
-    const { resolveAutomationsConfigPath } = await import('@craft-agent/shared/automations/resolve-config-path')
+    const { resolveAutomationsConfigPath } = await import('@scrunchy/shared/automations/resolve-config-path')
     const configPath = resolveAutomationsConfigPath(workspace.rootPath)
     const raw = await readFile(configPath, 'utf-8')
     const config = JSON.parse(raw) as { automations?: Record<string, Array<{ id?: string; actions?: Array<{ type: string; [key: string]: unknown }> }>> }
@@ -234,9 +234,9 @@ export function registerAutomationsHandlers(server: RpcServer, deps: HandlerDeps
     const webhookActions = (matcher.actions ?? []).filter(a => a.type === 'webhook')
     if (webhookActions.length === 0) throw new Error('No webhook actions to replay')
 
-    const { executeWebhookRequest, createWebhookHistoryEntry } = await import('@craft-agent/shared/automations/webhook-utils')
+    const { executeWebhookRequest, createWebhookHistoryEntry } = await import('@scrunchy/shared/automations/webhook-utils')
     const results = await Promise.all(
-      webhookActions.map(a => executeWebhookRequest(a as unknown as import('@craft-agent/shared/automations').WebhookAction))
+      webhookActions.map(a => executeWebhookRequest(a as unknown as import('@scrunchy/shared/automations').WebhookAction))
     )
 
     // Write history entries for replay — use index to correctly attribute method per action

@@ -1,12 +1,12 @@
 {
-  "name": "@craft-agent/cli",
+  "name": "@scrunchy/cli",
   "version": "0.8.3",
   "license": "Apache-2.0",
-  "description": "Terminal client for Craft Agent server",
+  "description": "Terminal client for Scrunchy server",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "craft-cli": "src/index.ts"
+    "scrunchy-cli": "src/index.ts"
   },
   "scripts": {
     "start": "bun run src/index.ts",
@@ -14,8 +14,8 @@
     "test": "bun test src/"
   },
   "dependencies": {
-    "@craft-agent/shared": "workspace:*",
-    "@craft-agent/server-core": "workspace:*"
+    "@scrunchy/shared": "workspace:*",
+    "@scrunchy/server-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.2",

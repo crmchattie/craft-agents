@@ -5,7 +5,7 @@ import { TriageService } from '../triage-service.ts';
 import { WorkspaceEventBus } from '../../automations/event-bus.ts';
 import { appendMessages, readMessages, replaceEvents, readEvents } from '../storage.ts';
 import { saveInboxConfig, DEFAULT_INBOX_CONFIG } from '../config.ts';
-import type { InboxMessage, CalendarEvent } from '@craft-agent/core/types';
+import type { InboxMessage, CalendarEvent } from '@scrunchy/core/types';
 import type { SimpleLlmCallFn } from '../../agent/simple-llm-call.ts';
 
 const TEST_DIR = join(import.meta.dir, '.test-triage-workspace');

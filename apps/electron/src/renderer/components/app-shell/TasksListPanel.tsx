@@ -4,7 +4,7 @@ import { EntityPanel } from '@/components/ui/entity-panel'
 import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
 import { taskSelection } from '@/hooks/useEntitySelection'
-import type { Task, TaskState } from '@craft-agent/core/types'
+import type { Task, TaskState } from '@scrunchy/core/types'
 import type { SessionStatus } from '@/config/session-status-config'
 
 const PRIORITY_COLORS: Record<string, string> = {

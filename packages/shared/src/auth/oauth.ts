@@ -26,7 +26,7 @@ export interface OAuthCallbacks {
 const CALLBACK_PORT_START = 8914;
 const CALLBACK_PORT_END = 8924;
 const CALLBACK_PATH = '/oauth/callback';
-const CLIENT_NAME = 'Claude Code (Craft Agent)';
+const CLIENT_NAME = 'Claude Code (Scrunchy)';
 
 // Generate PKCE code verifier and challenge
 function generatePKCE(): { verifier: string; challenge: string } {
@@ -264,7 +264,7 @@ export class CraftOAuth {
       }
     } else {
       // Use a default client ID for public clients
-      clientId = 'craft-agent';
+      clientId = 'scrunchy';
       this.callbacks.onStatus(`Using default client ID: ${clientId}`);
     }
 
@@ -574,10 +574,10 @@ export async function prepareMcpOAuth(
       // Dynamic client registration can be intentionally gated by providers
       // (for example returning 403 for unapproved clients). In that case,
       // fall back to a default client ID and proceed with the flow.
-      clientId = 'craft-agent';
+      clientId = 'scrunchy';
     }
   } else {
-    clientId = 'craft-agent';
+    clientId = 'scrunchy';
   }
 
   const authUrl = new URL(metadata.authorization_endpoint);

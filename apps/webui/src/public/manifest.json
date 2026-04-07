@@ -1,6 +1,6 @@
 {
-  "name": "Craft Agents",
-  "short_name": "Craft Agents",
+  "name": "Scrunchy",
+  "short_name": "Scrunchy",
   "description": "AI agent interface",
   "start_url": "./",
   "display": "standalone",

@@ -5,7 +5,7 @@
 
 import { createLogger } from '../utils/debug.ts';
 import type { EventBus } from '../automations/event-bus.ts';
-import type { InboxMessage, CalendarEvent, InboxSourceType } from '@craft-agent/core/types';
+import type { InboxMessage, CalendarEvent, InboxSourceType } from '@scrunchy/core/types';
 import type { McpClientPool, McpToolResult } from '../mcp/mcp-pool.ts';
 import { loadInboxConfig, type InboxConfig, type InboxSourceConfig } from './config.ts';
 import {

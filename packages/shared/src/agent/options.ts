@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from
 import { debug } from "../utils/debug";
 import { getProxyEnvVars } from "../config/proxy-env.ts";
 
-declare const CRAFT_AGENT_CLI_VERSION: string | undefined;
+declare const SCRUNCHY_CLI_VERSION: string | undefined;
 
 let customPathToClaudeCodeExecutable: string | null = null;
 let customInterceptorPath: string | null = null;
@@ -203,7 +203,7 @@ export function buildClaudeSubprocessEnv(
         ...getProxyEnvVars(),
         ...envOverrides,
         // Propagate debug mode from argv flag OR existing env var
-        CRAFT_DEBUG: (process.argv.includes('--debug') || process.env.CRAFT_DEBUG === '1') ? '1' : '0',
+        SCRUNCHY_DEBUG: (process.argv.includes('--debug') || process.env.SCRUNCHY_DEBUG === '1') ? '1' : '0',
     };
 
     // Bedrock must never be routed through the Claude SDK path.
@@ -224,7 +224,7 @@ export function getDefaultOptions(envOverrides?: Record<string, string>): Partia
     // Without this, Bun loads .env from the subprocess cwd (user's working directory),
     // which can inject ANTHROPIC_API_KEY and override our OAuth auth — silently charging
     // the user's API key instead of their Max subscription.
-    // See: https://github.com/lukilabs/craft-agents-oss/issues/39
+    // See: https://github.com/lukilabs/scrunchy-oss/issues/39
     // Use platform-appropriate null device (NUL on Windows, /dev/null on Unix)
     const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null';
     const envFileFlag = `--env-file=${nullDevice}`;
@@ -245,8 +245,8 @@ export function getDefaultOptions(envOverrides?: Record<string, string>): Partia
         };
     }
 
-    if (typeof CRAFT_AGENT_CLI_VERSION !== 'undefined' && CRAFT_AGENT_CLI_VERSION != null) {
-        const baseDir = join(homedir(), '.local', 'share', 'craft', 'versions', CRAFT_AGENT_CLI_VERSION);
+    if (typeof SCRUNCHY_CLI_VERSION !== 'undefined' && SCRUNCHY_CLI_VERSION != null) {
+        const baseDir = join(homedir(), '.local', 'share', 'craft', 'versions', SCRUNCHY_CLI_VERSION);
         return {
             pathToClaudeCodeExecutable: join(baseDir, 'claude-agent-sdk', 'cli.js'),
             // Use the compiled binary itself as the runtime via BUN_BE_BUN=1

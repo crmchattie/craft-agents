@@ -7,7 +7,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
 import { useNavigationState, isTasksNavigation } from '@/contexts/NavigationContext'
 import { navigate, routes } from '@/lib/navigate'
-import type { TaskState } from '@craft-agent/core/types'
+import type { TaskState } from '@scrunchy/core/types'
 
 export default function TasksPage() {
   const activeWorkspace = useActiveWorkspace()

@@ -5,7 +5,7 @@
  * instance of these tools with session-specific callbacks and state.
  *
  * This file is a thin adapter that wraps the shared handlers from
- * @craft-agent/session-tools-core for use with the Claude SDK.
+ * @scrunchy/session-tools-core for use with the Claude SDK.
  *
  * All tool definitions, schemas, and handlers live in session-tools-core.
  * This adapter only handles:
@@ -31,7 +31,7 @@ import {
   // Types
   type ToolResult,
   type AuthRequest,
-} from '@craft-agent/session-tools-core';
+} from '@scrunchy/session-tools-core';
 import { createLLMTool, type LLMQueryRequest, type LLMQueryResult } from './llm-tool.ts';
 import { createSpawnSessionTool, type SpawnSessionFn } from './spawn-session-tool.ts';
 import { createBrowserTools, type BrowserPaneFns } from './browser-tools.ts';
@@ -52,7 +52,7 @@ export type {
   GoogleService,
   SlackService,
   MicrosoftService,
-} from '@craft-agent/session-tools-core';
+} from '@scrunchy/session-tools-core';
 
 // Re-export browser pane types for session manager wiring
 export type { BrowserPaneFns } from './browser-tools.ts';
@@ -101,13 +101,13 @@ export interface SessionScopedToolCallbacks {
   /** Set status on a session (defaults to current). */
   setSessionStatusFn?: (sessionId: string | undefined, status: string) => void | Promise<void>;
   /** Get detailed info about a session (defaults to current). */
-  getSessionInfoFn?: (sessionId?: string) => import('@craft-agent/session-tools-core').SessionInfo | null;
+  getSessionInfoFn?: (sessionId?: string) => import('@scrunchy/session-tools-core').SessionInfo | null;
   /** List sessions in the workspace with pagination. */
-  listSessionsFn?: (options?: import('@craft-agent/session-tools-core').ListSessionsOptions) => import('@craft-agent/session-tools-core').ListSessionsResult;
+  listSessionsFn?: (options?: import('@scrunchy/session-tools-core').ListSessionsOptions) => import('@scrunchy/session-tools-core').ListSessionsResult;
   /** Resolve label display names to IDs. */
-  resolveLabelsFn?: (labels: string[]) => import('@craft-agent/session-tools-core').ResolvedLabelsResult;
+  resolveLabelsFn?: (labels: string[]) => import('@scrunchy/session-tools-core').ResolvedLabelsResult;
   /** Resolve a status display name to its ID. */
-  resolveStatusFn?: (status: string) => import('@craft-agent/session-tools-core').ResolvedStatusResult;
+  resolveStatusFn?: (status: string) => import('@scrunchy/session-tools-core').ResolvedStatusResult;
 }
 
 // Registry of callbacks keyed by sessionId

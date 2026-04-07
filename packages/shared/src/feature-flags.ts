@@ -8,6 +8,11 @@ function getEnv(key: string): string | undefined {
   return undefined;
 }
 
+/** Read env var with legacy CRAFT_ fallback */
+function getEnvWithFallback(scrunchyKey: string, craftKey: string): string | undefined {
+  return getEnv(scrunchyKey) ?? getEnv(craftKey);
+}
+
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value == null) return undefined;
   const normalized = value.trim().toLowerCase();
@@ -24,7 +29,7 @@ function parseBooleanEnv(value: string | undefined): boolean | undefined {
  */
 export function isDevRuntime(): boolean {
   const nodeEnv = (getEnv('NODE_ENV') || '').toLowerCase();
-  return nodeEnv === 'development' || nodeEnv === 'dev' || getEnv('CRAFT_DEBUG') === '1';
+  return nodeEnv === 'development' || nodeEnv === 'dev' || getEnvWithFallback('SCRUNCHY_DEBUG', 'CRAFT_DEBUG') === '1';
 }
 
 /**
@@ -32,18 +37,18 @@ export function isDevRuntime(): boolean {
  * Explicit env override has precedence over dev-runtime defaults.
  */
 export function isDeveloperFeedbackEnabled(): boolean {
-  const override = parseBooleanEnv(getEnv('CRAFT_FEATURE_DEVELOPER_FEEDBACK'));
+  const override = parseBooleanEnv(getEnvWithFallback('SCRUNCHY_FEATURE_DEVELOPER_FEEDBACK', 'SCRUNCHY_FEATURE_DEVELOPER_FEEDBACK'));
   if (override !== undefined) return override;
   return isDevRuntime();
 }
 
 /**
- * Runtime-evaluated check for craft-agents-cli integration.
+ * Runtime-evaluated check for Scrunchy CLI integration.
  *
- * Defaults to disabled. Override with CRAFT_FEATURE_CRAFT_AGENTS_CLI=1|0.
+ * Defaults to disabled. Override with SCRUNCHY_FEATURE_CLI=1|0.
  */
-export function isCraftAgentsCliEnabled(): boolean {
-  const override = parseBooleanEnv(getEnv('CRAFT_FEATURE_CRAFT_AGENTS_CLI'));
+export function isScrunchyCliEnabled(): boolean {
+  const override = parseBooleanEnv(getEnvWithFallback('SCRUNCHY_FEATURE_CLI', 'SCRUNCHY_FEATURE_CLI'));
   if (override !== undefined) return override;
   return false;
 }
@@ -51,10 +56,10 @@ export function isCraftAgentsCliEnabled(): boolean {
 /**
  * Runtime-evaluated check for embedded server settings page.
  *
- * Defaults to disabled. Override with CRAFT_FEATURE_EMBEDDED_SERVER=1|0.
+ * Defaults to disabled. Override with SCRUNCHY_FEATURE_EMBEDDED_SERVER=1|0.
  */
 export function isEmbeddedServerEnabled(): boolean {
-  const override = parseBooleanEnv(getEnv('CRAFT_FEATURE_EMBEDDED_SERVER'));
+  const override = parseBooleanEnv(getEnvWithFallback('SCRUNCHY_FEATURE_EMBEDDED_SERVER', 'SCRUNCHY_FEATURE_EMBEDDED_SERVER'));
   if (override !== undefined) return override;
   return false;
 }
@@ -66,23 +71,23 @@ export const FEATURE_FLAGS = {
    * Enable agent developer feedback tool.
    *
    * Defaults to enabled in explicit development runtimes; disabled otherwise.
-   * Override with CRAFT_FEATURE_DEVELOPER_FEEDBACK=1|0.
+   * Override with SCRUNCHY_FEATURE_DEVELOPER_FEEDBACK=1|0.
    */
   get developerFeedback(): boolean {
     return isDeveloperFeedbackEnabled();
   },
   /**
-   * Enable craft-agent CLI guidance and guardrails.
+   * Enable Scrunchy CLI guidance and guardrails.
    *
-   * Defaults to disabled. Override with CRAFT_FEATURE_CRAFT_AGENTS_CLI=1|0.
+   * Defaults to disabled. Override with SCRUNCHY_FEATURE_CLI=1|0.
    */
-  get craftAgentsCli(): boolean {
-    return isCraftAgentsCliEnabled();
+  get scrunchyCli(): boolean {
+    return isScrunchyCliEnabled();
   },
   /**
    * Enable embedded server settings page.
    *
-   * Defaults to disabled. Override with CRAFT_FEATURE_EMBEDDED_SERVER=1|0.
+   * Defaults to disabled. Override with SCRUNCHY_FEATURE_EMBEDDED_SERVER=1|0.
    */
   get embeddedServer(): boolean {
     return isEmbeddedServerEnabled();

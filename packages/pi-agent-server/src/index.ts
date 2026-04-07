@@ -339,18 +339,18 @@ function shouldPreferCustomEndpoint(): boolean {
  */
 function setInterceptorApiHints(model: { api?: string; provider?: string; baseUrl?: string } | undefined): void {
   if (!model) {
-    delete process.env.CRAFT_PI_MODEL_API;
-    delete process.env.CRAFT_PI_MODEL_PROVIDER;
-    delete process.env.CRAFT_PI_MODEL_BASE_URL;
+    delete process.env.SCRUNCHY_PI_MODEL_API;
+    delete process.env.SCRUNCHY_PI_MODEL_PROVIDER;
+    delete process.env.SCRUNCHY_PI_MODEL_BASE_URL;
     return;
   }
 
-  process.env.CRAFT_PI_MODEL_API = model.api || '';
-  process.env.CRAFT_PI_MODEL_PROVIDER = model.provider || '';
-  process.env.CRAFT_PI_MODEL_BASE_URL = model.baseUrl || '';
+  process.env.SCRUNCHY_PI_MODEL_API = model.api || '';
+  process.env.SCRUNCHY_PI_MODEL_PROVIDER = model.provider || '';
+  process.env.SCRUNCHY_PI_MODEL_BASE_URL = model.baseUrl || '';
 
   debugLog(
-    `[interceptor-hint] api=${process.env.CRAFT_PI_MODEL_API || '-'} provider=${process.env.CRAFT_PI_MODEL_PROVIDER || '-'} baseUrl=${process.env.CRAFT_PI_MODEL_BASE_URL || '-'}`,
+    `[interceptor-hint] api=${process.env.SCRUNCHY_PI_MODEL_API || '-'} provider=${process.env.SCRUNCHY_PI_MODEL_PROVIDER || '-'} baseUrl=${process.env.SCRUNCHY_PI_MODEL_BASE_URL || '-'}`,
   );
 }
 
@@ -1205,7 +1205,7 @@ function isContextOverflowErrorMessage(message: string): boolean {
 /**
  * Wait for any in-flight compaction to finish before sending a prompt.
  * Prevents a race in the Pi SDK where concurrent _runAutoCompaction calls
- * crash on a shared AbortController (see craft-agents-oss#464).
+ * crash on a shared AbortController (see scrunchy-oss#464).
  */
 async function waitForCompaction(session: { isCompacting: boolean }, timeoutMs = 60_000): Promise<void> {
   if (!session.isCompacting) return;
@@ -1253,7 +1253,7 @@ async function handlePrompt(msg: Extract<InboundMessage, { type: 'prompt' }>): P
     }
     unsubscribeEvents = session.subscribe(handleSessionEvent);
 
-    // Wait for any in-flight auto-compaction to avoid race (craft-agents-oss#464)
+    // Wait for any in-flight auto-compaction to avoid race (scrunchy-oss#464)
     await waitForCompaction(session);
 
     // Fire prompt — use followUp when session is already streaming so the

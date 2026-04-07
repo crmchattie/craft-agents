@@ -28,8 +28,8 @@ import {
   type ToolRow,
 } from '@/components/info'
 import type { LoadedSource, McpToolWithPermission } from '../../shared/types'
-import { detectCapabilities, discoverCapabilitiesFromTools } from '@craft-agent/shared/inbox/provider-registry'
-import type { PermissionsConfigFile } from '@craft-agent/shared/agent/modes'
+import { detectCapabilities, discoverCapabilitiesFromTools } from '@scrunchy/shared/inbox/provider-registry'
+import type { PermissionsConfigFile } from '@scrunchy/shared/agent/modes'
 
 interface SourceInfoPageProps {
   sourceSlug: string
@@ -407,7 +407,7 @@ export default function SourceInfoPage({ sourceSlug, workspaceId, onDelete }: So
 
   // Handle opening in new window
   const handleOpenInNewWindow = useCallback(() => {
-    window.electronAPI.openUrl(`craftagents://sources/source/${sourceSlug}?window=focused`)
+    window.electronAPI.openUrl(`scrunchy://sources/source/${sourceSlug}?window=focused`)
   }, [sourceSlug])
 
   // Get source name for header

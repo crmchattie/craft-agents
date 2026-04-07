@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import type { InboxMessage } from '@craft-agent/core/types'
+import type { InboxMessage } from '@scrunchy/core/types'
 
 export interface InboxFilter {
   view: 'all' | 'actionable'

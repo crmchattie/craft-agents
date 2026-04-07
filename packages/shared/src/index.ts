@@ -1,20 +1,20 @@
 /**
- * @craft-agent/shared
+ * @scrunchy/shared
  *
- * Shared business logic for Craft Agent.
+ * Shared business logic for Scrunchy.
  * Used by the Electron app.
  *
  * Import specific modules via subpath exports:
- *   import { CraftAgent } from '@craft-agent/shared/agent';
- *   import { loadStoredConfig } from '@craft-agent/shared/config';
- *   import { getCredentialManager } from '@craft-agent/shared/credentials';
- *   import { CraftMcpClient } from '@craft-agent/shared/mcp';
- *   import { debug } from '@craft-agent/shared/utils';
- *   import { loadSource, createSource, getSourceCredentialManager } from '@craft-agent/shared/sources';
- *   import { createWorkspace, loadWorkspace } from '@craft-agent/shared/workspaces';
+ *   import { Scrunchy } from '@scrunchy/shared/agent';
+ *   import { loadStoredConfig } from '@scrunchy/shared/config';
+ *   import { getCredentialManager } from '@scrunchy/shared/credentials';
+ *   import { CraftMcpClient } from '@scrunchy/shared/mcp';
+ *   import { debug } from '@scrunchy/shared/utils';
+ *   import { loadSource, createSource, getSourceCredentialManager } from '@scrunchy/shared/sources';
+ *   import { createWorkspace, loadWorkspace } from '@scrunchy/shared/workspaces';
  *
  * Available modules:
- *   - agent: CraftAgent SDK wrapper, plan tools
+ *   - agent: Scrunchy SDK wrapper, plan tools
  *   - auth: OAuth, token management, auth state
  *   - clients: Craft API client
  *   - config: Storage, models, preferences

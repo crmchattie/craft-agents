@@ -4,7 +4,7 @@ import { EntityPanel } from '@/components/ui/entity-panel'
 import { EntityListBadge } from '@/components/ui/entity-list-badge'
 import { EntityListEmptyScreen } from '@/components/ui/entity-list-empty'
 import { calendarSelection } from '@/hooks/useEntitySelection'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
 
 export interface CalendarListPanelProps {

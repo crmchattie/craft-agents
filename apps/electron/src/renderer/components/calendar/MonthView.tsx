@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { EventCard } from './EventCard'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import {
   startOfMonth,
   endOfMonth,

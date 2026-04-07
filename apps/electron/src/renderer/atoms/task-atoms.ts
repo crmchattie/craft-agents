@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import type { Task, TaskState } from '@craft-agent/core/types'
+import type { Task, TaskState } from '@scrunchy/core/types'
 
 export const tasksAtom = atom<Task[]>([])
 export const taskFilterAtom = atom<TaskState | 'all'>('all')

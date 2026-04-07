@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { RPC_CHANNELS } from '@craft-agent/shared/protocol'
-import { getWorkspaceByNameOrId } from '@craft-agent/shared/config'
-import { loadSource, loadWorkspaceSources, getSourceCredentialManager } from '@craft-agent/shared/sources'
-import { createPendingFlow } from '@craft-agent/shared/auth'
-import { pushTyped, type RpcServer } from '@craft-agent/server-core/transport'
+import { RPC_CHANNELS } from '@scrunchy/shared/protocol'
+import { getWorkspaceByNameOrId } from '@scrunchy/shared/config'
+import { loadSource, loadWorkspaceSources, getSourceCredentialManager } from '@scrunchy/shared/sources'
+import { createPendingFlow } from '@scrunchy/shared/auth'
+import { pushTyped, type RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
-import { detectCapabilities, autoWireSource } from '@craft-agent/shared/inbox'
+import { detectCapabilities, autoWireSource } from '@scrunchy/shared/inbox'
 
 export const HANDLED_CHANNELS = [
   RPC_CHANNELS.oauth.START,

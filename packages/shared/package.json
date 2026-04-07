@@ -1,15 +1,15 @@
 {
-  "name": "@craft-agent/shared",
+  "name": "@scrunchy/shared",
   "version": "0.8.3",
   "license": "Apache-2.0",
-  "description": "Shared business logic for Craft Agents - agent, auth, config, credentials, MCP integration",
+  "description": "Shared business logic for Scrunchy - agent, auth, config, credentials, MCP integration",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "sync:craft-agent-bash-patterns": "bun run src/config/sync-craft-agent-bash-patterns.ts"
+    "sync:scrunchy-bash-patterns": "bun run src/config/sync-scrunchy-bash-patterns.ts"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -64,8 +64,8 @@
     "./protocol": "./src/protocol/index.ts"
   },
   "dependencies": {
-    "@craft-agent/core": "workspace:*",
-    "@craft-agent/session-tools-core": "workspace:*",
+    "@scrunchy/core": "workspace:*",
+    "@scrunchy/session-tools-core": "workspace:*",
     "@isaacs/ttlcache": "^2.1.4",
     "@leeoniya/ufuzzy": "^1.0.19",
     "bash-parser": "^0.5.0",

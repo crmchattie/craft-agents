@@ -82,11 +82,11 @@ mock.module('../../../skills/storage.ts', () => ({
   PROJECT_AGENT_SKILLS_DIR: '.agents/skills',
 }));
 
-let mockCraftAgentsCliFlag = false;
+let mockScrunchyCliFlag = false;
 mock.module('../../../feature-flags.ts', () => ({
   FEATURE_FLAGS: {
-    get craftAgentsCli() {
-      return mockCraftAgentsCliFlag;
+    get scrunchyCli() {
+      return mockScrunchyCliFlag;
     },
     get developerFeedback() {
       return false;
@@ -166,7 +166,7 @@ describe('runPreToolUseChecks', () => {
     mockValidateConfigFileContent.mockReset();
     mockValidateConfigFileContent.mockImplementation(() => null);
     mockReadOnlyBashPatterns = [];
-    mockCraftAgentsCliFlag = false;
+    mockScrunchyCliFlag = false;
   });
 
   // ============================================================
@@ -303,9 +303,9 @@ describe('runPreToolUseChecks', () => {
       expect(result.type).toBe('call_llm_intercept');
     });
 
-    it('skips source check for built-in MCP servers (craft-agents-docs)', () => {
+    it('skips source check for built-in MCP servers (scrunchy-docs)', () => {
       const result = runPreToolUseChecks(createInput({
-        toolName: 'mcp__craft-agents-docs__search',
+        toolName: 'mcp__scrunchy-docs__search',
         input: {},
         activeSourceSlugs: [],
       }));
@@ -414,7 +414,7 @@ describe('runPreToolUseChecks', () => {
 
   describe('step 5: input transforms', () => {
     beforeEach(() => {
-      mockCraftAgentsCliFlag = true;
+      mockScrunchyCliFlag = true;
     });
 
     it('expands tilde paths and returns modify', () => {
@@ -467,8 +467,8 @@ describe('runPreToolUseChecks', () => {
       }
     });
 
-    it('blocks direct label folder reads and suggests craft-agent label help when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks direct label folder reads and suggests scrunchy label help when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
 
       const result = runPreToolUseChecks(createInput({
         toolName: 'Read',
@@ -477,14 +477,14 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent label');
-        expect(result.reason).toContain('craft-agent label --help');
+        expect(result.reason).toContain('scrunchy label');
+        expect(result.reason).toContain('scrunchy label --help');
         expect(result.reason).toContain('labels/');
       }
     });
 
-    it('blocks direct label config writes and suggests craft-agent label help when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks direct label config writes and suggests scrunchy label help when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
       mockDetectConfigFileType.mockImplementation(() => ({ type: 'labels', displayFile: 'labels/config.json' }));
 
       const result = runPreToolUseChecks(createInput({
@@ -494,13 +494,13 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent label');
-        expect(result.reason).toContain('craft-agent label --help');
+        expect(result.reason).toContain('scrunchy label');
+        expect(result.reason).toContain('scrunchy label --help');
       }
     });
 
     it('does not apply config-file CLI redirect when feature is disabled', () => {
-      mockCraftAgentsCliFlag = false;
+      mockScrunchyCliFlag = false;
       mockDetectConfigFileType.mockImplementation(() => ({ type: 'labels', displayFile: 'labels/config.json' }));
 
       const result = runPreToolUseChecks(createInput({
@@ -512,7 +512,7 @@ describe('runPreToolUseChecks', () => {
     });
 
     it('does not block label config writes when feature is disabled', () => {
-      mockCraftAgentsCliFlag = false;
+      mockScrunchyCliFlag = false;
       mockDetectConfigFileType.mockImplementation(() => ({ type: 'labels', displayFile: 'labels/config.json' }));
 
       const result = runPreToolUseChecks(createInput({
@@ -524,7 +524,7 @@ describe('runPreToolUseChecks', () => {
     });
 
     it('does not block bash commands touching automations files when feature is disabled', () => {
-      mockCraftAgentsCliFlag = false;
+      mockScrunchyCliFlag = false;
 
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
@@ -535,8 +535,8 @@ describe('runPreToolUseChecks', () => {
       expect(result.type).toBe('allow');
     });
 
-    it('blocks direct automations config edits and suggests craft-agent automation commands when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks direct automations config edits and suggests scrunchy automation commands when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
       mockDetectConfigFileType.mockImplementation(() => ({ type: 'automations', displayFile: 'automations.json' }));
 
       const result = runPreToolUseChecks(createInput({
@@ -550,13 +550,13 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent automation');
+        expect(result.reason).toContain('scrunchy automation');
         expect(result.reason).toContain('automations.json');
       }
     });
 
-    it('blocks direct source config edits and suggests craft-agent source commands when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks direct source config edits and suggests scrunchy source commands when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
       mockDetectConfigFileType.mockImplementation(() => ({
         type: 'source',
         slug: 'linear',
@@ -574,13 +574,13 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent source');
+        expect(result.reason).toContain('scrunchy source');
         expect(result.reason).toContain('sources/linear/config.json');
       }
     });
 
-    it('blocks direct skill file edits and suggests craft-agent skill commands when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks direct skill file edits and suggests scrunchy skill commands when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
       mockDetectConfigFileType.mockImplementation(() => ({
         type: 'skill',
         slug: 'commit-helper',
@@ -598,13 +598,13 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent skill');
+        expect(result.reason).toContain('scrunchy skill');
         expect(result.reason).toContain('skills/commit-helper/SKILL.md');
       }
     });
 
-    it('blocks bash commands touching labels paths and points to craft-agent label --help when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks bash commands touching labels paths and points to scrunchy label --help when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
 
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
@@ -614,23 +614,23 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent label --help');
-        expect(result.reason).toContain('craft-agent label');
+        expect(result.reason).toContain('scrunchy label --help');
+        expect(result.reason).toContain('scrunchy label');
       }
     });
 
-    it('allows bash craft-agent label commands through labels guard', () => {
+    it('allows bash scrunchy label commands through labels guard', () => {
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
-        input: { command: 'craft-agent label list' },
+        input: { command: 'scrunchy label list' },
         permissionMode: 'allow-all',
       }));
 
       expect(result.type).toBe('allow');
     });
 
-    it('blocks bash commands touching automations files and points to craft-agent automation --help when feature is enabled', () => {
-      mockCraftAgentsCliFlag = true;
+    it('blocks bash commands touching automations files and points to scrunchy automation --help when feature is enabled', () => {
+      mockScrunchyCliFlag = true;
 
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
@@ -640,15 +640,15 @@ describe('runPreToolUseChecks', () => {
 
       expect(result.type).toBe('block');
       if (result.type === 'block') {
-        expect(result.reason).toContain('craft-agent automation --help');
-        expect(result.reason).toContain('craft-agent automation');
+        expect(result.reason).toContain('scrunchy automation --help');
+        expect(result.reason).toContain('scrunchy automation');
       }
     });
 
-    it('allows bash craft-agent automation commands through config-domain bash guard', () => {
+    it('allows bash scrunchy automation commands through config-domain bash guard', () => {
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
-        input: { command: 'craft-agent automation list' },
+        input: { command: 'scrunchy automation list' },
         permissionMode: 'allow-all',
       }));
 
@@ -656,7 +656,7 @@ describe('runPreToolUseChecks', () => {
     });
 
     it('does not apply config-domain bash guard when feature is disabled', () => {
-      mockCraftAgentsCliFlag = false;
+      mockScrunchyCliFlag = false;
 
       const result = runPreToolUseChecks(createInput({
         toolName: 'Bash',
@@ -930,7 +930,7 @@ describe('shouldPromptInAskMode', () => {
     mockValidateConfigFileContent.mockReset();
     mockValidateConfigFileContent.mockImplementation(() => null);
     mockReadOnlyBashPatterns = [];
-    mockCraftAgentsCliFlag = false;
+    mockScrunchyCliFlag = false;
   });
 
   // --- File writes ---

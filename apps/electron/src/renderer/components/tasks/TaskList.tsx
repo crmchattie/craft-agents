@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Circle, CheckCircle2, Clock, XCircle, Star, ExternalLink } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Info_Badge } from '@/components/info'
-import type { Task, TaskState } from '@craft-agent/core/types'
+import type { Task, TaskState } from '@scrunchy/core/types'
 import { cn } from '@/lib/utils'
 
 interface TaskListProps {

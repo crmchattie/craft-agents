@@ -11,7 +11,7 @@ import { calendarViewAtom, calendarSelectedDateAtom } from '@/atoms/calendar-ato
 import { useActiveWorkspace, useAppShellContext } from '@/context/AppShellContext'
 import { useNavigationState, isCalendarNavigation } from '@/contexts/NavigationContext'
 import { navigate, routes } from '@/lib/navigate'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 
 export default function CalendarPage() {
   const activeWorkspace = useActiveWorkspace()

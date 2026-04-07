@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add Inbox, Tasks, and Calendar sections to the Craft Agents sidebar — alongside the existing Sessions section — that pull in messages (Slack, email) and calendar events via MCP servers from the Anthropic connector store. A cheap triage model (Haiku) scans incoming messages and calendar events, populates a task list from actionable items, and prepares agent sessions with full context — so the user can review and execute with one click.
+Add Inbox, Tasks, and Calendar sections to the Scrunchy sidebar — alongside the existing Sessions section — that pull in messages (Slack, email) and calendar events via MCP servers from the Anthropic connector store. A cheap triage model (Haiku) scans incoming messages and calendar events, populates a task list from actionable items, and prepares agent sessions with full context — so the user can review and execute with one click.
 
 ## Problem
 
@@ -713,7 +713,7 @@ Haiku at ~$0.25/MTok input, ~$1.25/MTok output. A batch of 20 messages ≈ 5K to
 | Tasks sidebar section | Status section pattern | Expandable with todo/in-progress/done sub-items, count badges |
 | Calendar sidebar section | Same expandable pattern | Today/This Week as filter items, calendar sources as sub-items |
 | Message list | Session list (`SessionList.tsx`) | Same `EntityList` + `EntityRow` pattern, click to open detail |
-| Message detail | `TurnCard` from `@craft-agent/ui` | Similar sender/content/timestamp layout, thread as nested cards |
+| Message detail | `TurnCard` from `@scrunchy/ui` | Similar sender/content/timestamp layout, thread as nested cards |
 | Thread view | Chat message display (existing) | Messages rendered as a conversation |
 | Task list | Planner playground component | Task state machine, grouping by state, drag support via `@dnd-kit` (already a dependency) |
 | Task detail | `Info_Page` pattern | Title, metadata, linked message, draft prompt, action buttons |
@@ -806,8 +806,8 @@ Added to the workspace EventBus:
 ## Implementation Plan
 
 ### Milestone 1: Data Layer & Types (1.5 weeks)
-- [ ] `InboxMessage`, `CalendarEvent`, `Task` types in `@craft-agent/core`
-- [ ] JSONL read/write helpers for messages, events, and tasks in `@craft-agent/shared` (follow session JSONL patterns: atomic writes, resilient parsing, portable paths)
+- [ ] `InboxMessage`, `CalendarEvent`, `Task` types in `@scrunchy/core`
+- [ ] JSONL read/write helpers for messages, events, and tasks in `@scrunchy/shared` (follow session JSONL patterns: atomic writes, resilient parsing, portable paths)
 - [ ] `inbox-config.json` schema, loading, and validation
 - [ ] Sync cursor management (`sync-state.json`)
 - [ ] `InboxSyncService` — calls MCP tools, normalizes responses, writes to JSONL
@@ -907,7 +907,7 @@ Since we're calling MCP tools directly (not through an agent), efficiency matter
 
 ### WebUI Compatibility
 - All RPC channels work over WebSocket (same as sessions)
-- UI components placed in `@craft-agent/ui` where possible for cross-platform reuse
+- UI components placed in `@scrunchy/ui` where possible for cross-platform reuse
 - WebUI gets inbox/tasks/calendar if connected to a server with inbox enabled
 
 ---

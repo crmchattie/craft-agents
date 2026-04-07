@@ -9,7 +9,7 @@
  */
 
 import { RPC_CHANNELS } from './types'
-import { FEATURE_FLAGS } from '@craft-agent/shared/feature-flags'
+import { FEATURE_FLAGS } from '@scrunchy/shared/feature-flags'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

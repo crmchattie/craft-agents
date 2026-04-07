@@ -85,7 +85,7 @@ export function AddWorkspaceStep_Choice({
         <ChoiceCard
           icon={<Cloud className="h-5 w-5" />}
           title="Connect to remote server"
-          description="Use a remote Craft Agent Server."
+          description="Use a remote Scrunchy Server."
           onClick={onConnectRemote}
         />
       </div>

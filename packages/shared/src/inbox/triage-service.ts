@@ -12,7 +12,7 @@ import type {
   EventTriage,
   TriageCategory,
   TriagePriority,
-} from '@craft-agent/core/types';
+} from '@scrunchy/core/types';
 import { loadInboxConfig } from './config.ts';
 import {
   readMessages,

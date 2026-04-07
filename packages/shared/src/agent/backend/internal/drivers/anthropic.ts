@@ -98,7 +98,13 @@ export const anthropicDriver: ProviderDriver = {
     // After legacy migration, only direct 'anthropic' connections reach this driver.
 
     if (connection.providerType === 'anthropic' && connection.authType === 'oauth') {
-      const { getValidClaudeOAuthToken } = await import('../../../../auth/state.ts');
+      // Check Claude Code CLI's native keychain auth first — the SDK subprocess
+      // uses its own session, so the app's credential store may be empty.
+      const { hasClaudeCodeCliAuth, getValidClaudeOAuthToken } = await import('../../../../auth/state.ts');
+      if (hasClaudeCodeCliAuth()) {
+        return { success: true };
+      }
+      // Fallback: check app's own OAuth token store
       const tokenResult = await getValidClaudeOAuthToken(slug);
       if (!tokenResult.accessToken) {
         const errorMsg = tokenResult.migrationRequired?.message || 'OAuth token expired. Please re-authenticate.';

@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { MessageSquare, Mail, Star, Circle } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { inboxFilterAtom, selectedMessageIdAtom } from '@/atoms/inbox-atoms'
-import type { InboxMessage } from '@craft-agent/core/types'
+import type { InboxMessage } from '@scrunchy/core/types'
 import { cn } from '@/lib/utils'
 
 interface MessageListProps {

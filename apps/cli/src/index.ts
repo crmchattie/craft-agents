@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * craft-cli — Terminal client for Craft Agent server.
+ * scrunchy-cli — Terminal client for Scrunchy server.
  *
- * Connects over WebSocket (ws:// or wss://) to a running Craft Agent server
+ * Connects over WebSocket (ws:// or wss://) to a running Scrunchy server
  * and provides commands for listing resources, managing sessions, sending
  * messages with real-time streaming, and validating server health.
  */
@@ -146,9 +146,9 @@ export function parseArgs(argv: string[]): CliArgs {
   }
 
   // Env var fallbacks
-  if (!url) url = process.env.CRAFT_SERVER_URL ?? ''
-  if (!token) token = process.env.CRAFT_SERVER_TOKEN ?? ''
-  if (!tlsCa) tlsCa = process.env.CRAFT_TLS_CA
+  if (!url) url = process.env.SCRUNCHY_SERVER_URL ?? ''
+  if (!token) token = process.env.SCRUNCHY_SERVER_TOKEN ?? ''
+  if (!tlsCa) tlsCa = process.env.SCRUNCHY_TLS_CA
   if (!provider) provider = process.env.LLM_PROVIDER ?? 'anthropic'
   if (!model) model = process.env.LLM_MODEL ?? ''
   if (!apiKey) apiKey = process.env.LLM_API_KEY ?? ''
@@ -1003,7 +1003,7 @@ export function getValidateSteps(): ValidateStep[] {
         // Auto-bootstrap a temp workspace for CI environments
         const { mkdtemp } = await import('fs/promises')
         const { tmpdir } = await import('os')
-        const tmpDir = await mkdtemp(`${tmpdir()}/craft-validate-`)
+        const tmpDir = await mkdtemp(`${tmpdir()}/scrunchy-validate-`)
         const ws = (await client.invoke('workspaces:create', tmpDir, 'validate-workspace')) as { id: string }
         ctx.workspaceId = ws.id
         ctx.workspaceRootPath = tmpDir
@@ -1187,17 +1187,17 @@ export function getValidateSteps(): ValidateStep[] {
     },
     // ----- MCP source validation (pre-committed in .github/agents/sources/) -----
     {
-      name: 'mcp:craft-public (auth:none)',
+      name: 'mcp:scrunchy-public (auth:none)',
       fn: async (client, ctx) => {
         if (!ctx.createdSessionId) return 'skipped (no session)'
-        // Enable the pre-committed craft-public MCP source on the session
-        const enableSlugs = [ctx.createdSourceSlug, 'craft-public'].filter(Boolean) as string[]
+        // Enable the pre-committed scrunchy-public MCP source on the session
+        const enableSlugs = [ctx.createdSourceSlug, 'scrunchy-public'].filter(Boolean) as string[]
         await client.invoke('sessions:command', ctx.createdSessionId, {
           type: 'setSources',
           sourceSlugs: enableSlugs,
         })
         return await waitForSendEvents(client, ctx.createdSessionId,
-          `[source:craft-public] List the documents under the "CraftAgents E2E Test" folder inside the "CraftAgents" folder. Just list their names.`,
+          `[source:scrunchy-public] List the documents under the "Scrunchys E2E Test" folder inside the "Scrunchys" folder. Just list their names.`,
           180_000, false, undefined, ctx.onEvent)
       },
     },
@@ -1210,7 +1210,7 @@ export function getValidateSteps(): ValidateStep[] {
         // Inject credential into store (multi-header JSON format, same as API headerNames)
         await client.invoke('sources:saveCredentials', ctx.workspaceId, 'stitch-mcp', JSON.stringify({ 'X-Goog-Api-Key': apiKey }))
         // Enable stitch-mcp + existing sources on session
-        const enableSlugs = [ctx.createdSourceSlug, 'craft-public', 'stitch-mcp'].filter(Boolean) as string[]
+        const enableSlugs = [ctx.createdSourceSlug, 'scrunchy-public', 'stitch-mcp'].filter(Boolean) as string[]
         await client.invoke('sessions:command', ctx.createdSessionId, {
           type: 'setSources',
           sourceSlugs: enableSlugs,
@@ -1234,7 +1234,7 @@ export function getValidateSteps(): ValidateStep[] {
 mkdir -p "${skillDir}" && cat > "${skillDir}/SKILL.md" << 'SKILLEOF'
 ---
 name: "CLI Validate Skill"
-description: "Validation skill created by craft-cli"
+description: "Validation skill created by scrunchy-cli"
 requiredSources:
   - "${sourceSlug}"
 ---
@@ -1741,13 +1741,13 @@ export async function runValidation(
 // ---------------------------------------------------------------------------
 
 function printHelp(): void {
-  process.stdout.write(`craft-cli — Terminal client for Craft Agent server
+  process.stdout.write(`scrunchy-cli — Terminal client for Scrunchy server
 
-Usage: craft-cli [options] <command> [args...]
+Usage: scrunchy-cli [options] <command> [args...]
 
 Connection:
-  --url <ws[s]://...>    Server URL (default: $CRAFT_SERVER_URL)
-  --token <secret>       Auth token (default: $CRAFT_SERVER_TOKEN)
+  --url <ws[s]://...>    Server URL (default: $SCRUNCHY_SERVER_URL)
+  --token <secret>       Auth token (default: $SCRUNCHY_SERVER_TOKEN)
   --workspace <id>       Workspace ID (auto-detected if omitted)
   --timeout <ms>         Request timeout (default: 10000)
   --tls-ca <path>        Custom CA cert for self-signed TLS
@@ -1786,20 +1786,20 @@ Commands:
                          --verbose, -v       Show server stderr output
 
 Examples:
-  craft-cli run "What files are in the current directory?"
-  craft-cli run --source craft-kb "Summarize today's daily note"
-  craft-cli run --workspace-dir .github/agents --source craft-public "Read the doc"
-  craft-cli run --provider openai --model gpt-4o "Summarize this repo"
-  OPENAI_API_KEY=sk-... craft-cli run --provider openai "Hello"
-  GOOGLE_API_KEY=... craft-cli run --provider google --model gemini-2.0-flash "Hello"
-  echo "Analyze this code" | craft-cli run
-  craft-cli ping
-  craft-cli sessions
-  craft-cli send abc-123 "What files are in the current directory?"
-  echo "Summarize this" | craft-cli send abc-123
-  craft-cli --validate-server
-  craft-cli invoke system:homeDir
-  craft-cli --json workspaces | jq '.[].name'
+  scrunchy-cli run "What files are in the current directory?"
+  scrunchy-cli run --source craft-kb "Summarize today's daily note"
+  scrunchy-cli run --workspace-dir .github/agents --source scrunchy-public "Read the doc"
+  scrunchy-cli run --provider openai --model gpt-4o "Summarize this repo"
+  OPENAI_API_KEY=sk-... scrunchy-cli run --provider openai "Hello"
+  GOOGLE_API_KEY=... scrunchy-cli run --provider google --model gemini-2.0-flash "Hello"
+  echo "Analyze this code" | scrunchy-cli run
+  scrunchy-cli ping
+  scrunchy-cli sessions
+  scrunchy-cli send abc-123 "What files are in the current directory?"
+  echo "Summarize this" | scrunchy-cli send abc-123
+  scrunchy-cli --validate-server
+  scrunchy-cli invoke system:homeDir
+  scrunchy-cli --json workspaces | jq '.[].name'
 `)
 }
 
@@ -1840,7 +1840,7 @@ export async function main(argv: string[] = process.argv): Promise<void> {
 
   // All other commands need a server URL
   if (!args.url) {
-    err('No server URL. Use --url <ws://...> or set $CRAFT_SERVER_URL')
+    err('No server URL. Use --url <ws://...> or set $SCRUNCHY_SERVER_URL')
     process.exit(1)
   }
 

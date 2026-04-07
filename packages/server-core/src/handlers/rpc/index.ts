@@ -1,4 +1,4 @@
-import type { RpcServer } from '@craft-agent/server-core/transport'
+import type { RpcServer } from '@scrunchy/server-core/transport'
 import type { HandlerDeps } from '../handler-deps'
 
 import { registerAuthHandlers } from './auth'

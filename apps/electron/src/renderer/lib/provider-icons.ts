@@ -20,7 +20,7 @@ import openrouterIcon from '@/assets/provider-icons/openrouter.svg'
 import piIcon from '@/assets/provider-icons/pi.svg'
 import vercelIcon from '@/assets/provider-icons/vercel.svg'
 
-import type { LlmProviderType } from '@craft-agent/shared/config/llm-connections'
+import type { LlmProviderType } from '@scrunchy/shared/config/llm-connections'
 
 /**
  * Icon URLs for each provider
@@ -54,8 +54,8 @@ const providerDisplayNames: Record<string, string> = {
   minimax: 'Minimax',
   ollama: 'Ollama',
   openrouter: 'OpenRouter',
-  pi: 'Craft Agents Backend',
-  pi_compat: 'Craft Agents Backend',
+  pi: 'Scrunchy Backend',
+  pi_compat: 'Scrunchy Backend',
   vercel: 'Vercel',
 }
 

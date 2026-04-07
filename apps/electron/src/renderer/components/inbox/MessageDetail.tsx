@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Info_Badge } from '@/components/info'
 import { TriageCard } from './TriageCard'
-import type { InboxMessage } from '@craft-agent/core/types'
+import type { InboxMessage } from '@scrunchy/core/types'
 import { cn } from '@/lib/utils'
 
 interface MessageDetailProps {

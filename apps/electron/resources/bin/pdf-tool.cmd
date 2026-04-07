@@ -1,2 +1,2 @@
 @echo off
-"%CRAFT_UV%" run --python 3.12 "%CRAFT_SCRIPTS%\pdf_tool.py" %*
+"%SCRUNCHY_UV%" run --python 3.12 "%SCRUNCHY_SCRIPTS%\pdf_tool.py" %*

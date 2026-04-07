@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EventCard, getEventPosition } from './EventCard'
-import type { CalendarEvent } from '@craft-agent/core/types'
+import type { CalendarEvent } from '@scrunchy/core/types'
 import {
   startOfWeek,
   addDays,

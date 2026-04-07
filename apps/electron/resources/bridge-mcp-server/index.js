@@ -17919,7 +17919,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 function getCredentialCachePath(workspaceId, sourceSlug) {
-  return join(homedir(), ".craft-agent", "workspaces", workspaceId, "sources", sourceSlug, ".credential-cache.json");
+  return join(homedir(), ".scrunchy", "workspaces", workspaceId, "sources", sourceSlug, ".credential-cache.json");
 }
 function readCredential(workspaceId, sourceSlug) {
   const cachePath = getCredentialCachePath(workspaceId, sourceSlug);
@@ -18236,7 +18236,7 @@ async function main() {
     process.exit(1);
   }
   const server = new Server({
-    name: "craft-agent-api-bridge",
+    name: "scrunchy-api-bridge",
     version: "0.3.1"
   }, {
     capabilities: {

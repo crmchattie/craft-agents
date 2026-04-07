@@ -166,28 +166,28 @@ export default [
       'no-restricted-imports': ['error', {
         paths: [
           {
-            name: '@craft-agent/shared/codex',
-            message: 'Use provider-agnostic APIs from @craft-agent/shared/agent/backend instead.',
+            name: '@scrunchy/shared/codex',
+            message: 'Use provider-agnostic APIs from @scrunchy/shared/agent/backend instead.',
           },
           {
-            name: '@craft-agent/shared/agent/claude-agent',
-            message: 'Provider backends must stay behind @craft-agent/shared/agent/backend.',
+            name: '@scrunchy/shared/agent/claude-agent',
+            message: 'Provider backends must stay behind @scrunchy/shared/agent/backend.',
           },
           {
-            name: '@craft-agent/shared/agent/codex-agent',
-            message: 'Provider backends must stay behind @craft-agent/shared/agent/backend.',
+            name: '@scrunchy/shared/agent/codex-agent',
+            message: 'Provider backends must stay behind @scrunchy/shared/agent/backend.',
           },
           {
-            name: '@craft-agent/shared/agent/copilot-agent',
-            message: 'Provider backends must stay behind @craft-agent/shared/agent/backend.',
+            name: '@scrunchy/shared/agent/copilot-agent',
+            message: 'Provider backends must stay behind @scrunchy/shared/agent/backend.',
           },
           {
-            name: '@craft-agent/shared/agent/pi-agent',
-            message: 'Provider backends must stay behind @craft-agent/shared/agent/backend.',
+            name: '@scrunchy/shared/agent/pi-agent',
+            message: 'Provider backends must stay behind @scrunchy/shared/agent/backend.',
           },
           {
             name: '@github/copilot-sdk',
-            message: 'Use provider-agnostic model discovery/validation APIs from @craft-agent/shared/agent/backend.',
+            message: 'Use provider-agnostic model discovery/validation APIs from @scrunchy/shared/agent/backend.',
           },
         ],
       }],
@@ -201,7 +201,7 @@ export default [
       'no-restricted-syntax': ['error',
         {
           selector: "CallExpression[callee.name='fetch']",
-          message: 'Do not call provider APIs directly in Electron model fetchers. Delegate to fetchBackendModels() from @craft-agent/shared/agent/backend.',
+          message: 'Do not call provider APIs directly in Electron model fetchers. Delegate to fetchBackendModels() from @scrunchy/shared/agent/backend.',
         },
         {
           selector: "ImportDeclaration[source.value='@anthropic-ai/claude-agent-sdk']",
