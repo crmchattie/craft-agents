@@ -2377,7 +2377,7 @@ function AppShellContent({
                     {
                       id: "nav:inbox",
                       title: "Inbox",
-                      label: inboxMessages.length > 0 ? String(inboxMessages.length) : undefined,
+                      label: String(inboxMessages.length),
                       icon: Mail,
                       variant: isInboxNavigation(navState) ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.inbox()),
@@ -2386,7 +2386,7 @@ function AppShellContent({
                     {
                       id: "nav:calendar",
                       title: "Calendar",
-                      label: calendarEvents.length > 0 ? String(calendarEvents.length) : undefined,
+                      label: String(calendarEvents.length),
                       icon: CalendarDays,
                       variant: isCalendarNavigation(navState) ? "default" as const : "ghost" as const,
                       onClick: () => navigate(routes.view.calendar()),
