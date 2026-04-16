@@ -21,6 +21,7 @@ export interface HostedMcpServer {
 
 // Cache discovery results (valid for the process lifetime)
 let cachedServers: HostedMcpServer[] | null = null;
+let cachedAt: number | null = null;
 let discoveryInProgress: Promise<HostedMcpServer[]> | null = null;
 
 /**
@@ -43,17 +44,28 @@ export function isHostedMcpAvailable(): boolean {
  * Returns cached results on subsequent calls.
  */
 export async function discoverHostedMcpServers(): Promise<HostedMcpServer[]> {
-  if (cachedServers !== null) return cachedServers;
-  if (discoveryInProgress) return discoveryInProgress;
+  if (cachedServers !== null) {
+    const ageSec = cachedAt ? Math.floor((Date.now() - cachedAt) / 1000) : -1;
+    const summary = cachedServers.map(s => `${s.slug}(${s.status})`).join(', ') || '<empty>';
+    debug(`Returning cached hosted MCP discovery (age=${ageSec}s, ${cachedServers.length} servers): ${summary}`);
+    return cachedServers;
+  }
+  if (discoveryInProgress) {
+    debug('Hosted MCP discovery already in progress — awaiting existing promise');
+    return discoveryInProgress;
+  }
 
   if (!isHostedMcpAvailable()) {
+    debug('Hosted MCPs unavailable: no Claude Code CLI auth detected');
     cachedServers = [];
+    cachedAt = Date.now();
     return cachedServers;
   }
 
   discoveryInProgress = doDiscovery();
   try {
     cachedServers = await discoveryInProgress;
+    cachedAt = Date.now();
     return cachedServers;
   } finally {
     discoveryInProgress = null;
@@ -81,7 +93,10 @@ export async function getConnectedHostedMcpSlugs(): Promise<string[]> {
  * Clear the discovery cache (e.g., after auth changes).
  */
 export function clearHostedMcpCache(): void {
+  const prevAge = cachedAt ? Math.floor((Date.now() - cachedAt) / 1000) : -1;
+  debug(`Clearing hosted MCP discovery cache (prev age=${prevAge}s)`);
   cachedServers = null;
+  cachedAt = null;
 }
 
 async function doDiscovery(): Promise<HostedMcpServer[]> {
@@ -145,9 +160,16 @@ async function doDiscovery(): Promise<HostedMcpServer[]> {
     }
 
     debug(`Discovered ${hostedServers.length} hosted MCP servers: ${hostedServers.map(s => `${s.slug}(${s.status}, ${s.tools.length} tools)`).join(', ')}`);
+    // Emit a per-server breakdown for easier diagnosis of individual server states
+    for (const s of hostedServers) {
+      debug(`  hosted MCP: slug=${s.slug} status=${s.status} tools=${s.tools.length}`);
+    }
     return hostedServers;
   } catch (error) {
-    debug(`Discovery failed: ${error instanceof Error ? error.message : String(error)}`);
+    // Use console.error so the failure is visible even with debug filters off
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[hosted-mcp-discovery] Discovery failed: ${msg}`);
+    debug(`Discovery failed: ${msg}`);
     return [];
   }
 }

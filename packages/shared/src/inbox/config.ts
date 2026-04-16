@@ -19,6 +19,9 @@ export interface InboxSourceConfig {
   enabled: boolean;
   fetchToolName: string;
   fetchToolArgs?: Record<string, unknown>;
+  /** MCP pool registration slug. For multi-capability servers (e.g. M365),
+   *  this is the base server slug while sourceSlug has a capability suffix. */
+  serverSlug?: string;
 }
 
 export interface InboxConfig {

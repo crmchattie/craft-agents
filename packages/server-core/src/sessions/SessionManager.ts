@@ -1443,18 +1443,28 @@ export class SessionManager implements ISessionManager {
                   const HOSTED_SOURCE_MAP: Record<string, HostedSourceMapping | HostedSourceMapping[]> = {
                     claude_ai_Gmail: { sourceType: 'email', fetchToolName: 'gmail_search_messages', fetchToolArgs: { query: 'newer_than:1d' } },
                     claude_ai_Google_Calendar: { sourceType: 'calendar', fetchToolName: 'gcal_list_events' },
-                    claude_ai_Slack: { sourceType: 'slack', fetchToolName: 'slack_search_public_and_private', fetchToolArgs: { query: '*', sort: 'timestamp', count: 20 } },
+                    claude_ai_Slack: { sourceType: 'slack', fetchToolName: 'slack_search_public_and_private', fetchToolArgs: { query: 'to:me', sort: 'timestamp', response_format: 'detailed', count: 5 } },
                     claude_ai_Microsoft_365: [
-                      { sourceType: 'email', fetchToolName: 'outlook_email_search', fetchToolArgs: { query: '*', count: 20 } },
+                      { sourceType: 'email', fetchToolName: 'outlook_email_search', fetchToolArgs: { folderName: 'inbox', limit: 10 } },
                       { sourceType: 'calendar', fetchToolName: 'outlook_calendar_search' },
                     ],
                   }
 
+                  sessionLog.info(`[hosted-mcp] Auto-wire evaluating ${hostedServers.length} discovered servers (pool slugs before: [${inboxPool.getConnectedSlugs().join(', ')}])`)
+
                   let configChanged = false
                   for (const server of hostedServers) {
-                    if (server.status !== 'connected') continue
+                    const mapped = server.slug in HOSTED_SOURCE_MAP
+                    if (server.status !== 'connected') {
+                      sessionLog.info(`[hosted-mcp] Skipping ${server.slug}: status=${server.status} (tools=${server.tools.length}, mapped=${mapped})`)
+                      continue
+                    }
                     const rawMapping = HOSTED_SOURCE_MAP[server.slug]
-                    if (!rawMapping) continue
+                    if (!rawMapping) {
+                      sessionLog.info(`[hosted-mcp] Skipping ${server.slug}: no inbox mapping (connected, tools=${server.tools.length})`)
+                      continue
+                    }
+                    sessionLog.info(`[hosted-mcp] Wiring ${server.slug}: connected, tools=${server.tools.length}`)
 
                     // Normalize to array (Microsoft 365 has both email + calendar)
                     const mappings = Array.isArray(rawMapping) ? rawMapping : [rawMapping]
@@ -1469,6 +1479,7 @@ export class SessionManager implements ISessionManager {
                           sourceType: mapping.sourceType,
                           fetchToolName: mapping.fetchToolName,
                           fetchToolArgs: mapping.fetchToolArgs,
+                          serverSlug: server.slug,
                           enabled: true,
                         })
                         configChanged = true
@@ -1488,6 +1499,8 @@ export class SessionManager implements ISessionManager {
                   if (configChanged) {
                     saveInboxConfig(workspaceRootPath, inboxConfig)
                   }
+
+                  sessionLog.info(`[hosted-mcp] Auto-wire complete. Pool slugs after: [${inboxPool.getConnectedSlugs().join(', ')}]`)
                 }
               } catch (error) {
                 sessionLog.error('Failed to wire hosted MCPs:', error instanceof Error ? error.message : String(error))
